@@ -17,33 +17,59 @@ const K_AZIENDA = "idraulico_v1_azienda";
 const K_FATTURE = "idraulico_v1_fatture";
 const K_LICENZE = "idraulico_v1_licenze";
 
-const hasStore = typeof window !== "undefined" && !!window.localStorage;
+const hasStore = true;
+
+// Mappa chiave -> collezione API
+const COLL = { [K_CLIENTI]: "clienti", [K_RAPP]: "rapportini", [K_RICH]: "richieste", [K_FATTURE]: "fatture" };
+
+async function apiGet(path) {
+  const r = await fetch("/api" + path, { credentials: "include" });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+async function apiSend(path, method, body) {
+  const r = await fetch("/api" + path, {
+    method,
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: body == null ? undefined : JSON.stringify(body),
+  });
+  let d = null;
+  try { d = await r.json(); } catch (e) {}
+  return { ok: r.ok, status: r.status, data: d || {} };
+}
 
 async function loadArr(key) {
-  if (!hasStore) return [];
+  const coll = COLL[key];
+  if (!coll) return [];
   try {
-    const v = window.localStorage.getItem(key);
-    return v ? JSON.parse(v) : [];
+    const d = await apiGet("/data/" + coll);
+    return Array.isArray(d.items) ? d.items : [];
   } catch (e) {
     return [];
   }
 }
 async function saveArr(key, val) {
-  if (!hasStore) return;
-  try {
-    window.localStorage.setItem(key, JSON.stringify(val));
-  } catch (e) {
-    console.error("storage error", e);
+  if (key === K_AZIENDA) {
+    try { await apiSend("/azienda", "PUT", val || {}); } catch (e) {}
+    return;
   }
+  const coll = COLL[key];
+  if (!coll) return;
+  try { await apiSend("/data/" + coll, "PUT", { items: val || [] }); } catch (e) {}
 }
 async function loadObj(key) {
-  if (!hasStore) return null;
-  try {
-    const v = window.localStorage.getItem(key);
-    return v ? JSON.parse(v) : null;
-  } catch (e) {
-    return null;
+  if (key === K_AZIENDA) {
+    try {
+      const d = await apiGet("/azienda");
+      const az = d.azienda || null;
+      if (az && !az.denominazione && !az.partitaIva) return null;
+      return az;
+    } catch (e) {
+      return null;
+    }
   }
+  return null;
 }
 
 const uid = () =>
@@ -923,53 +949,45 @@ export default function App() {
   const [greet, setGreet] = useState(null);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    (async () => {
-      let [c, r, ri] = await Promise.all([loadArr(K_CLIENTI), loadArr(K_RAPP), loadArr(K_RICH)]);
-      let az = await loadObj(K_AZIENDA);
-      if (az) {
-        let changed = false;
-        if (!Array.isArray(az.aliquoteIva)) { az = { ...az, aliquoteIva: Array.from(new Set([Number(az.aliquotaIva) || 22, 22, 10, 4])) }; changed = true; }
-        if (az.aliquotaManodopera === undefined) { az = { ...az, aliquotaManodopera: Number(az.aliquotaIva) || 22, costoManodopera: az.costoManodopera ?? "", sezionale: az.sezionale ?? "" }; changed = true; }
-        if (changed) saveArr(K_AZIENDA, az);
-      }
-      const ft = await loadArr(K_FATTURE);
-      const lic = await loadArr(K_LICENZE);
-      let seeded = false;
-      if (hasStore) {
-        try {
-          seeded = !!window.localStorage.getItem(K_SEED);
-        } catch (e) {
-          seeded = false;
-        }
-      }
-      if (!seeded) {
-        const s = seedData();
-        const idset = (a) => new Set(a.map((x) => x.id));
-        const ci = idset(c), rai = idset(r), rii = idset(ri);
-        c = [...c, ...s.clienti.filter((x) => !ci.has(x.id))];
-        r = [...s.rapportini.filter((x) => !rai.has(x.id)), ...r];
-        ri = [...s.richieste.filter((x) => !rii.has(x.id)), ...ri];
-        if (!az) az = s.azienda;
-        saveArr(K_CLIENTI, c);
-        saveArr(K_RAPP, r);
-        saveArr(K_RICH, ri);
-        saveArr(K_AZIENDA, az);
-        if (hasStore) {
-          try { window.localStorage.setItem(K_SEED, "1"); } catch (e) {}
-        }
-      }
-      c = c.map(migrateCliente);
-      saveArr(K_CLIENTI, c);
-      setClienti(c);
-      setRapportini(r);
-      setRichieste(ri);
-      setAzienda(az);
-      setFatture(ft);
-      setLicenze(lic);
+  const caricaDati = async () => {
+    let [c, r, ri] = await Promise.all([loadArr(K_CLIENTI), loadArr(K_RAPP), loadArr(K_RICH)]);
+    let az = await loadObj(K_AZIENDA);
+    if (az) {
+      let changed = false;
+      if (!Array.isArray(az.aliquoteIva)) { az = { ...az, aliquoteIva: Array.from(new Set([Number(az.aliquotaIva) || 22, 22, 10, 4])) }; changed = true; }
+      if (az.aliquotaManodopera === undefined) { az = { ...az, aliquotaManodopera: Number(az.aliquotaIva) || 22, costoManodopera: az.costoManodopera ?? "", sezionale: az.sezionale ?? "" }; changed = true; }
+      if (changed) saveArr(K_AZIENDA, az);
+    }
+    const ft = await loadArr(K_FATTURE);
+    c = c.map(migrateCliente);
+    setClienti(c);
+    setRapportini(r);
+    setRichieste(ri);
+    setAzienda(az);
+    setFatture(ft);
+  };
+
+  const boot = async (showGreet) => {
+    let me = null;
+    try {
+      const r = await fetch("/api/me", { credentials: "include" });
+      me = r.ok ? await r.json() : null;
+    } catch (e) { me = null; }
+    if (!me) { setAuth(null); setLoaded(true); return; }
+    if (me.ruolo === "reseller") {
+      setAuth({ role: "reseller", label: me.nome || "Rivenditore" });
+      if (showGreet) setGreet("Benvenuto " + (me.nome || "Rivenditore"));
       setLoaded(true);
-    })();
-  }, []);
+      return;
+    }
+    const nome = (me.azienda && me.azienda.denominazione) || me.email;
+    setAuth({ role: "cliente", label: nome });
+    if (showGreet) setGreet("Benvenuto " + nome);
+    await caricaDati();
+    setLoaded(true);
+  };
+
+  useEffect(() => { boot(false); }, []);
 
   const persistClienti = (next) => {
     setClienti(next);
@@ -994,21 +1012,30 @@ export default function App() {
   const deleteFattura = (id) => persistFatture(fatture.filter((f) => f.id !== id));
 
   const persistLicenze = (next) => { setLicenze(next); saveArr(K_LICENZE, next); };
-  const tryLogin = (pwd) => {
+  const tryLogin = async (email, pwd) => {
+    const em = (email || "").trim().toLowerCase();
     const p = (pwd || "").trim();
-    if (!p) return "Inserisci la password.";
-    if (p === "0724") { setAuth({ role: "reseller", label: "Rivenditore" }); return null; }
-    if (p.toLowerCase() === "admin") { setAuth({ role: "admin", label: "Federico" }); setGreet("Benvenuto Federico"); return null; }
-    const lic = licenze.find((l) => l.password === p);
-    if (lic) {
-      if (Date.now() > lic.scadenza) return "Licenza scaduta il " + fmtDate(new Date(lic.scadenza).toISOString().slice(0, 10)) + ". Contatta il rivenditore.";
-      setAuth({ role: "cliente", label: lic.nomeCliente || "Cliente", licId: lic.id, scadenza: lic.scadenza });
-      setGreet("Benvenuto" + (lic.nomeCliente ? " " + lic.nomeCliente : ""));
-      return null;
+    if (!em || !p) return "Inserisci email e password.";
+    try {
+      const r = await fetch("/api/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: em, password: p }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) return d.error || "Email o password non corretti.";
+    } catch (e) {
+      return "Errore di connessione. Riprova.";
     }
-    return "Password non corretta.";
+    await boot(true);
+    return null;
   };
-  const logout = () => { setAuth(null); setGreet(null); setMenuOpen(false); setDetailCliId(null); setLicenzeOpen(false); };
+  const logout = async () => {
+    try { await fetch("/api/logout", { method: "POST", credentials: "include" }); } catch (e) {}
+    setAuth(null); setGreet(null); setMenuOpen(false); setDetailCliId(null); setLicenzeOpen(false);
+    setClienti([]); setRapportini([]); setRichieste([]); setFatture([]); setAzienda(null);
+  };
   const createLicenza = (data) => {
     const mesi = Number(data.durataMesi) || 1;
     const d = new Date(); d.setMonth(d.getMonth() + mesi);
@@ -1082,6 +1109,7 @@ export default function App() {
 
   if (!loaded) return <div className="app"><Style /><div className="splash">Carico i dati…</div></div>;
   if (!auth) return <LoginScreen onSubmit={tryLogin} />;
+  if (auth.role === "reseller") return <ResellerScreen label={auth.label} onLogout={logout} />;
 
   /* ---- azioni rapportino ---- */
   const openNuovoRapp = () => {
@@ -2462,9 +2490,17 @@ function FatturaPreview({ fattura, logo, onClose, onDownload, onDelete }) {
    ============================================================ */
 
 function LoginScreen({ onSubmit }) {
+  const [email, setEmail] = useState("");
   const [pwd, setPwd] = useState("");
   const [err, setErr] = useState("");
-  const submit = () => { const e = onSubmit(pwd); if (e) setErr(e); };
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    if (busy) return;
+    setBusy(true); setErr("");
+    const e = await onSubmit(email, pwd);
+    if (e) setErr(e);
+    setBusy(false);
+  };
   return (
     <div className="app">
       <Style />
@@ -2478,15 +2514,24 @@ function LoginScreen({ onSubmit }) {
           <div className="login-sub">Rapportini, assistenza e fatturazione</div>
           <input
             className="input"
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setErr(""); }}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+            placeholder="Email"
+            autoFocus
+            style={{ marginBottom: 8 }}
+          />
+          <input
+            className="input"
             type="password"
             value={pwd}
             onChange={(e) => { setPwd(e.target.value); setErr(""); }}
             onKeyDown={(e) => e.key === "Enter" && submit()}
             placeholder="Password"
-            autoFocus
           />
           <div className="login-err">{err}</div>
-          <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={submit}>Accedi</button>
+          <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={submit} disabled={busy}>{busy ? "Accesso…" : "Accedi"}</button>
         </div>
         <div className="login-foot">
           <span>Realizzato da</span>
@@ -2554,6 +2599,123 @@ function LicenzeManager({ licenze, onCreate, onDelete, onClose }) {
           <button className="btn btn-primary" onClick={onClose}>Chiudi</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   SCHERMATA RESELLER — gestione aziende/licenze (via API)
+   ============================================================ */
+
+function ResellerScreen({ label, onLogout }) {
+  const [aziende, setAziende] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [denom, setDenom] = useState("");
+  const [email, setEmail] = useState("");
+  const [pwd, setPwd] = useState("");
+  const [scad, setScad] = useState("");
+  const [msg, setMsg] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const carica = async () => {
+    setLoading(true);
+    try {
+      const r = await fetch("/api/aziende", { credentials: "include" });
+      const d = await r.json();
+      setAziende(Array.isArray(d.aziende) ? d.aziende : []);
+    } catch (e) {}
+    setLoading(false);
+  };
+  useEffect(() => { carica(); }, []);
+
+  const crea = async () => {
+    setMsg(null);
+    if (!denom.trim() || !email.trim() || pwd.length < 8) {
+      setMsg({ t: "err", m: "Compila denominazione, email e password (minimo 8 caratteri)." });
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await fetch("/api/aziende", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ denominazione: denom.trim(), email: email.trim().toLowerCase(), password: pwd, licenzaScadenza: scad || null }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setMsg({ t: "err", m: d.error || "Errore nella creazione." });
+      } else {
+        setMsg({ t: "ok", m: "Azienda creata: " + denom.trim() });
+        setDenom(""); setEmail(""); setPwd(""); setScad("");
+        carica();
+      }
+    } catch (e) {
+      setMsg({ t: "err", m: "Errore di connessione." });
+    }
+    setBusy(false);
+  };
+
+  const elimina = async (id) => {
+    if (!window.confirm("Eliminare questa azienda e TUTTI i suoi dati? L'operazione e irreversibile.")) return;
+    try { await fetch("/api/aziende/" + id, { method: "DELETE", credentials: "include" }); carica(); } catch (e) {}
+  };
+
+  return (
+    <div className="app">
+      <Style />
+      <header className="topbar">
+        <div className="topbar-in">
+          <div className="brand">
+            <div className="brand-mark"><img src={ICON_INTERVENTIA} alt="interventia" /></div>
+            <div className="brand-name">interventia</div>
+          </div>
+          <div className="topbar-spacer" />
+          <button className="btn" onClick={onLogout}>Esci</button>
+        </div>
+      </header>
+      <main className="container">
+        <h1 style={{ fontSize: 22, margin: "6px 0 2px" }}>Gestione aziende</h1>
+        <div className="help" style={{ marginBottom: 16 }}>Crea un accesso per ogni azienda-cliente. Ognuna avra i propri dati, separati e privati. Alla scadenza della licenza l'accesso viene bloccato.</div>
+
+        <div className="card" style={{ padding: 16, marginBottom: 18, background: "#FBF8F5" }}>
+          <div className="row2">
+            <div className="field"><span className="label">Denominazione azienda *</span><input className="input" value={denom} onChange={(e) => setDenom(e.target.value)} placeholder="es. Termoidraulica Rossi" /></div>
+            <div className="field"><span className="label">Email di accesso *</span><input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cliente@esempio.it" /></div>
+          </div>
+          <div className="row2">
+            <div className="field"><span className="label">Password * (min 8)</span><input className="input" type="text" value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="password iniziale" /></div>
+            <div className="field"><span className="label">Scadenza licenza</span><input className="input" type="date" value={scad} onChange={(e) => setScad(e.target.value)} /></div>
+          </div>
+          {msg && <div className="login-err" style={{ color: msg.t === "ok" ? "var(--petrol-dark)" : undefined, minHeight: 0, margin: "4px 0 10px" }}>{msg.m}</div>}
+          <button className="btn btn-primary" onClick={crea} disabled={busy}>{busy ? "Creazione…" : "Crea azienda"}</button>
+        </div>
+
+        {loading ? (
+          <div className="help">Caricamento…</div>
+        ) : aziende.length === 0 ? (
+          <div className="help">Nessuna azienda creata.</div>
+        ) : (
+          <div className="stack">
+            {aziende.map((a) => {
+              const scaduta = a.licenza_scadenza ? (Date.now() > new Date(a.licenza_scadenza + "T23:59:59").getTime()) : false;
+              const attiva = Number(a.attiva) === 1 && !scaduta;
+              return (
+                <div key={a.id} className="rapp" style={{ cursor: "default" }}>
+                  <div className="body">
+                    <div className="cli">{a.denominazione || "Azienda"}</div>
+                    <div className="meta">{a.email || "—"} · {a.licenza_scadenza ? ("scade il " + fmtDate(a.licenza_scadenza)) : "senza scadenza"}</div>
+                  </div>
+                  <div className="right">
+                    <span className={"badge " + (attiva ? "ok" : "warn")}><span className="dot" />{attiva ? "Attiva" : (scaduta ? "Scaduta" : "Disattivata")}</span>
+                    <button className="btn btn-danger btn-sm" onClick={() => elimina(a.id)}>Elimina</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
