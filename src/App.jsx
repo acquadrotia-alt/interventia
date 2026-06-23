@@ -992,7 +992,7 @@ export default function App() {
       return;
     }
     const nome = (me.azienda && me.azienda.denominazione) || me.email;
-    setAuth({ role: "cliente", label: nome });
+    setAuth({ role: "cliente", label: nome, scadenza: (me.azienda && me.azienda.licenza_scadenza) || null });
     if (showGreet) setGreet("Benvenuto " + nome);
     await caricaDati();
     setLoaded(true);
@@ -1043,6 +1043,27 @@ export default function App() {
     await boot(true);
     return null;
   };
+  const tryRegister = async (denom, email, pwd) => {
+    const d = (denom || "").trim();
+    const em = (email || "").trim().toLowerCase();
+    const p = (pwd || "").trim();
+    if (!d || !em || p.length < 8) return "Inserisci denominazione, email e una password di almeno 8 caratteri.";
+    try {
+      const r = await fetch("/api/register", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ denominazione: d, email: em, password: p }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) return data.error || "Registrazione non riuscita.";
+    } catch (e) {
+      return "Errore di connessione. Riprova.";
+    }
+    await boot(true);
+    return null;
+  };
+
   const logout = async () => {
     try { await fetch("/api/logout", { method: "POST", credentials: "include" }); } catch (e) {}
     setAuth(null); setGreet(null); setMenuOpen(false); setDetailCliId(null); setLicenzeOpen(false);
@@ -1120,7 +1141,7 @@ export default function App() {
   }, [rapportini]);
 
   if (!loaded) return <div className="app"><Style /><div className="splash">Carico i dati…</div></div>;
-  if (!auth) return <LoginScreen onSubmit={tryLogin} />;
+  if (!auth) return <LoginScreen onSubmit={tryLogin} onRegister={tryRegister} />;
   if (auth.role === "reseller") return <ResellerScreen label={auth.label} onLogout={logout} />;
 
   /* ---- azioni rapportino ---- */
@@ -1282,6 +1303,23 @@ export default function App() {
           <button className="btn btn-primary" onClick={openNuovoRapp}>＋ Nuovo rapportino</button>
         </div>
       </header>
+
+      {auth.scadenza && (() => {
+        const fine = new Date(auth.scadenza + "T23:59:59").getTime();
+        const giorni = Math.ceil((fine - Date.now()) / 86400000);
+        if (giorni > 14) return null;
+        const urgente = giorni <= 3;
+        return (
+          <div style={{ background: urgente ? "#FDE7E7" : "#FFF3EA", borderBottom: "1px solid " + (urgente ? "#F3C9C9" : "#FAD9C2"), color: urgente ? "#B23B3B" : "#9a5a2a", padding: "9px 16px", fontSize: 13, textAlign: "center", lineHeight: 1.4 }}>
+            {giorni > 1
+              ? `La tua versione di prova scade tra ${giorni} giorni (${fmtDate(auth.scadenza)}).`
+              : giorni === 1
+                ? `La tua versione di prova scade domani (${fmtDate(auth.scadenza)}).`
+                : "La tua versione di prova scade oggi."}{" "}
+            Per continuare a usarla, contatta il rivenditore.
+          </div>
+        );
+      })()}
 
       {menuOpen && (
         <>
@@ -2507,7 +2545,9 @@ function FatturaPreview({ fattura, logo, onClose, onDownload, onDelete }) {
    SCHERMATA DI LOGIN
    ============================================================ */
 
-function LoginScreen({ onSubmit }) {
+function LoginScreen({ onSubmit, onRegister }) {
+  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [denom, setDenom] = useState("");
   const [email, setEmail] = useState("");
   const [pwd, setPwd] = useState("");
   const [err, setErr] = useState("");
@@ -2515,10 +2555,11 @@ function LoginScreen({ onSubmit }) {
   const submit = async () => {
     if (busy) return;
     setBusy(true); setErr("");
-    const e = await onSubmit(email, pwd);
+    const e = mode === "login" ? await onSubmit(email, pwd) : await onRegister(denom, email, pwd);
     if (e) setErr(e);
     setBusy(false);
   };
+  const switchMode = (m) => { setMode(m); setErr(""); };
   return (
     <div className="app">
       <Style />
@@ -2530,6 +2571,24 @@ function LoginScreen({ onSubmit }) {
         <div className="login-card">
           <img className="login-logo" src={LOGO_INTERVENTIA} alt="interventia" />
           <div className="login-sub">Rapportini, assistenza e fatturazione</div>
+
+          {mode === "register" && (
+            <>
+              <div style={{ background: "#FFF3EA", border: "1px solid #FAD9C2", borderRadius: 10, padding: "9px 11px", fontSize: 12.5, color: "#9a5a2a", marginBottom: 12, lineHeight: 1.4 }}>
+                Prova gratuita di <b>7 giorni</b>, con clienti e rapportini di esempio già pronti.
+              </div>
+              <input
+                className="input"
+                type="text"
+                value={denom}
+                onChange={(e) => { setDenom(e.target.value); setErr(""); }}
+                onKeyDown={(e) => e.key === "Enter" && submit()}
+                placeholder="Nome della tua attività"
+                autoFocus
+                style={{ marginBottom: 8 }}
+              />
+            </>
+          )}
           <input
             className="input"
             type="email"
@@ -2537,7 +2596,7 @@ function LoginScreen({ onSubmit }) {
             onChange={(e) => { setEmail(e.target.value); setErr(""); }}
             onKeyDown={(e) => e.key === "Enter" && submit()}
             placeholder="Email"
-            autoFocus
+            autoFocus={mode === "login"}
             style={{ marginBottom: 8 }}
           />
           <input
@@ -2546,10 +2605,24 @@ function LoginScreen({ onSubmit }) {
             value={pwd}
             onChange={(e) => { setPwd(e.target.value); setErr(""); }}
             onKeyDown={(e) => e.key === "Enter" && submit()}
-            placeholder="Password"
+            placeholder={mode === "register" ? "Scegli una password (min 8 caratteri)" : "Password"}
           />
           <div className="login-err">{err}</div>
-          <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={submit} disabled={busy}>{busy ? "Accesso…" : "Accedi"}</button>
+          <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={submit} disabled={busy}>
+            {busy ? (mode === "login" ? "Accesso…" : "Creazione…") : (mode === "login" ? "Accedi" : "Inizia la prova gratuita")}
+          </button>
+
+          <div style={{ textAlign: "center", marginTop: 14, fontSize: 13, color: "#7A6B60" }}>
+            {mode === "login" ? (
+              <span>Non hai un account?{" "}
+                <span onClick={() => switchMode("register")} style={{ color: "var(--petrol-dark)", fontWeight: 700, cursor: "pointer" }}>Prova gratis 7 giorni</span>
+              </span>
+            ) : (
+              <span>Hai già un account?{" "}
+                <span onClick={() => switchMode("login")} style={{ color: "var(--petrol-dark)", fontWeight: 700, cursor: "pointer" }}>Accedi</span>
+              </span>
+            )}
+          </div>
         </div>
         <div className="login-foot">
           <span>Realizzato da</span>
