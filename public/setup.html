@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>interventia — Configurazione</title>
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 540px; margin: 32px auto; padding: 0 16px; color: #1c1c1c; }
+  h1 { font-size: 20px; }
+  h2 { font-size: 16px; margin-top: 28px; }
+  .card { border: 1px solid #e3e3e3; border-radius: 12px; padding: 16px; margin-top: 12px; }
+  label { display: block; font-size: 13px; margin: 10px 0 4px; color: #444; }
+  input { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #cfcfcf; border-radius: 8px; font-size: 14px; }
+  button { margin-top: 14px; background: #ff751f; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; font-size: 14px; cursor: pointer; }
+  pre { background: #f6f6f6; padding: 10px; border-radius: 8px; white-space: pre-wrap; font-size: 13px; }
+  .ok { color: #137333; } .err { color: #c5221f; }
+  small { color: #666; }
+</style>
+</head>
+<body>
+  <h1>interventia — Configurazione iniziale</h1>
+  <p><small>Pagina temporanea per creare l'account reseller e verificare che tutto funzioni. Una volta finito, puoi anche rimuovere questo file.</small></p>
+
+  <div class="card">
+    <h2>1) Verifica collegamento</h2>
+    <button onclick="health()">Controlla stato</button>
+    <pre id="healthOut">—</pre>
+  </div>
+
+  <div class="card">
+    <h2>2) Crea l'account reseller</h2>
+    <label>Token di setup</label>
+    <input id="token" placeholder="il SETUP_TOKEN configurato su Cloudflare" />
+    <label>Email reseller</label>
+    <input id="email" type="email" placeholder="amministrazione@cmav.it" />
+    <label>Password (min 8 caratteri)</label>
+    <input id="password" type="password" placeholder="scegli una password robusta" />
+    <button onclick="setup()">Crea reseller</button>
+    <pre id="setupOut">—</pre>
+  </div>
+
+  <div class="card">
+    <h2>3) Prova il login</h2>
+    <label>Email</label>
+    <input id="lemail" type="email" />
+    <label>Password</label>
+    <input id="lpassword" type="password" />
+    <button onclick="login()">Accedi</button>
+    <button onclick="me()">Chi sono</button>
+    <pre id="loginOut">—</pre>
+  </div>
+
+<script>
+  async function call(url, opts) {
+    const r = await fetch(url, Object.assign({ headers: { "Content-Type": "application/json" } }, opts));
+    let data; try { data = await r.json(); } catch { data = { raw: await r.text() }; }
+    return { status: r.status, data };
+  }
+  function show(id, res) {
+    const el = document.getElementById(id);
+    el.textContent = "HTTP " + res.status + "\n" + JSON.stringify(res.data, null, 2);
+    el.className = res.status < 400 ? "ok" : "err";
+  }
+  async function health() { show("healthOut", await call("/api/health")); }
+  async function setup() {
+    show("setupOut", await call("/api/setup", { method: "POST", body: JSON.stringify({
+      token: document.getElementById("token").value,
+      email: document.getElementById("email").value,
+      password: document.getElementById("password").value,
+    })}));
+  }
+  async function login() {
+    show("loginOut", await call("/api/login", { method: "POST", body: JSON.stringify({
+      email: document.getElementById("lemail").value,
+      password: document.getElementById("lpassword").value,
+    })}));
+  }
+  async function me() { show("loginOut", await call("/api/me")); }
+</script>
+</body>
+</html>
