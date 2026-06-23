@@ -49,14 +49,24 @@ async function loadArr(key) {
     return [];
   }
 }
+let _pendingSaves = 0;
+const _saveSubs = new Set();
+function _emitSave() { const s = _pendingSaves > 0; _saveSubs.forEach((fn) => { try { fn(s); } catch (e) {} }); }
+function onSaveState(fn) { _saveSubs.add(fn); return () => _saveSubs.delete(fn); }
+
 async function saveArr(key, val) {
-  if (key === K_AZIENDA) {
-    try { await apiSend("/azienda", "PUT", val || {}); } catch (e) {}
-    return;
+  _pendingSaves++; _emitSave();
+  try {
+    if (key === K_AZIENDA) {
+      await apiSend("/azienda", "PUT", val || {});
+    } else {
+      const coll = COLL[key];
+      if (coll) await apiSend("/data/" + coll, "PUT", { items: val || [] });
+    }
+  } catch (e) {
+  } finally {
+    _pendingSaves--; _emitSave();
   }
-  const coll = COLL[key];
-  if (!coll) return;
-  try { await apiSend("/data/" + coll, "PUT", { items: val || [] }); } catch (e) {}
 }
 async function loadObj(key) {
   if (key === K_AZIENDA) {
@@ -948,6 +958,7 @@ export default function App() {
   const [licenzeOpen, setLicenzeOpen] = useState(false);
   const [greet, setGreet] = useState(null);
   const [search, setSearch] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const caricaDati = async () => {
     let [c, r, ri] = await Promise.all([loadArr(K_CLIENTI), loadArr(K_RAPP), loadArr(K_RICH)]);
@@ -988,6 +999,7 @@ export default function App() {
   };
 
   useEffect(() => { boot(false); }, []);
+  useEffect(() => onSaveState(setSaving), []);
 
   const persistClienti = (next) => {
     setClienti(next);
@@ -1261,6 +1273,12 @@ export default function App() {
             <div className="brand-name">interventia</div>
           </div>
           <div className="topbar-spacer" />
+          {saving && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)", marginRight: 10 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--petrol)", display: "inline-block" }} />
+              Salvataggio…
+            </span>
+          )}
           <button className="btn btn-primary" onClick={openNuovoRapp}>＋ Nuovo rapportino</button>
         </div>
       </header>
@@ -2661,6 +2679,13 @@ function ResellerScreen({ label, onLogout }) {
     try { await fetch("/api/aziende/" + id, { method: "DELETE", credentials: "include" }); carica(); } catch (e) {}
   };
 
+  const patch = async (id, body) => {
+    try {
+      await fetch("/api/aziende/" + id, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      carica();
+    } catch (e) {}
+  };
+
   return (
     <div className="app">
       <Style />
@@ -2697,25 +2722,36 @@ function ResellerScreen({ label, onLogout }) {
           <div className="help">Nessuna azienda creata.</div>
         ) : (
           <div className="stack">
-            {aziende.map((a) => {
-              const scaduta = a.licenza_scadenza ? (Date.now() > new Date(a.licenza_scadenza + "T23:59:59").getTime()) : false;
-              const attiva = Number(a.attiva) === 1 && !scaduta;
-              return (
-                <div key={a.id} className="rapp" style={{ cursor: "default" }}>
-                  <div className="body">
-                    <div className="cli">{a.denominazione || "Azienda"}</div>
-                    <div className="meta">{a.email || "—"} · {a.licenza_scadenza ? ("scade il " + fmtDate(a.licenza_scadenza)) : "senza scadenza"}</div>
-                  </div>
-                  <div className="right">
-                    <span className={"badge " + (attiva ? "ok" : "warn")}><span className="dot" />{attiva ? "Attiva" : (scaduta ? "Scaduta" : "Disattivata")}</span>
-                    <button className="btn btn-danger btn-sm" onClick={() => elimina(a.id)}>Elimina</button>
-                  </div>
-                </div>
-              );
-            })}
+            {aziende.map((a) => (
+              <AziendaRow key={a.id} a={a} onPatch={patch} onDelete={elimina} />
+            ))}
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+/* Riga azienda nella schermata reseller: rinnovo scadenza, attiva/disattiva, elimina */
+function AziendaRow({ a, onPatch, onDelete }) {
+  const [scad, setScad] = useState(a.licenza_scadenza || "");
+  const scaduta = a.licenza_scadenza ? (Date.now() > new Date(a.licenza_scadenza + "T23:59:59").getTime()) : false;
+  const attiva = Number(a.attiva) === 1;
+  const statoLabel = !attiva ? "Disattivata" : (scaduta ? "Scaduta" : "Attiva");
+  const statoClass = (!attiva || scaduta) ? "warn" : "ok";
+  return (
+    <div className="rapp" style={{ cursor: "default", flexWrap: "wrap", gap: 10 }}>
+      <div className="body">
+        <div className="cli">{a.denominazione || "Azienda"}</div>
+        <div className="meta">{a.email || "—"} · {a.licenza_scadenza ? ("scade il " + fmtDate(a.licenza_scadenza)) : "senza scadenza"}</div>
+      </div>
+      <div className="right" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <span className={"badge " + statoClass}><span className="dot" />{statoLabel}</span>
+        <input className="input" type="date" value={scad} onChange={(e) => setScad(e.target.value)} style={{ width: 150 }} title="Scadenza licenza" />
+        <button className="btn btn-sm" onClick={() => onPatch(a.id, { licenzaScadenza: scad || null })}>Salva scadenza</button>
+        <button className="btn btn-sm" onClick={() => onPatch(a.id, { attiva: attiva ? 0 : 1 })}>{attiva ? "Disattiva" : "Attiva"}</button>
+        <button className="btn btn-danger btn-sm" onClick={() => onDelete(a.id)}>Elimina</button>
+      </div>
     </div>
   );
 }
