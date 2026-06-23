@@ -100,6 +100,49 @@ function licenzaValida(azienda) {
   return true;
 }
 
+// Dati di esempio precaricati nelle prove demo
+function datiDemo() {
+  const base = { tipo: "persona", denominazione: "", nome: "", cognome: "", indirizzo: "", cap: "", comune: "", provincia: "", cf: "", piva: "", sdi: "", pec: "", email: "", telefono: "" };
+  const C = (id, x) => ({ id, ...base, ...x });
+  const clienti = [
+    C("c1", { tipo: "persona", nome: "Mario", cognome: "Rossi", indirizzo: "Via Garibaldi 12", cap: "20121", comune: "Milano", provincia: "MI", cf: "RSSMRA75A01F205X", email: "mario.rossi@email.it", telefono: "335 1234567" }),
+    C("c2", { tipo: "azienda", denominazione: "Condominio Aurora", indirizzo: "Viale dei Tigli 8", cap: "20133", comune: "Milano", provincia: "MI", cf: "97612340159", email: "amministrazione@condominioaurora.it", telefono: "02 5551234" }),
+    C("c3", { tipo: "azienda", denominazione: "Bar Centrale di Bianchi Luca", indirizzo: "Piazza Roma 3", cap: "20019", comune: "Settimo Milanese", provincia: "MI", piva: "04567890961", sdi: "M5UXCR1", pec: "barcentrale@pec.it", telefono: "340 9988776" }),
+    C("c4", { tipo: "azienda", denominazione: "Verdi Costruzioni S.r.l.", indirizzo: "Via dell'Industria 45", cap: "20090", comune: "Segrate", provincia: "MI", piva: "09876543210", sdi: "USAL8PV", pec: "verdicostruzioni@pec.it", email: "ufficio@verdicostruzioni.it", telefono: "02 7001122" }),
+    C("c5", { tipo: "persona", nome: "Giulia", cognome: "Ferrari", indirizzo: "Via Manzoni 7", cap: "20052", comune: "Monza", provincia: "MB", telefono: "347 5566778" }),
+  ];
+  const art = (descrizione, prezzo = null) => ({ id: crypto.randomUUID(), descrizione, prezzo });
+  const ts = (d) => new Date(d + "T09:00:00").getTime();
+  const R = (id, clienteId, numero, data, luogo, descrizione, ore, tariffaOraria, articoli, fatturato, note = "") =>
+    ({ id, numero, clienteId, data, luogo, descrizione, ore, tariffaOraria, articoli, note, fatturato, createdAt: ts(data) });
+  const rapportini = [
+    R("r8", "c5", 8, "2026-06-22", "Bagno", "Sopralluogo per rifacimento impianto bagno", 1, 0, [], false, "Da preventivare"),
+    R("r7", "c3", 7, "2026-06-21", "Bagno clienti", "Sostituzione cassetta WC esterna", 1.5, 0, [art("Cassetta esterna con meccanismo", 39.9)], false),
+    R("r6", "c2", 6, "2026-06-20", "Lastrico solare", "Controllo e pulizia pluviali e converse", 2, 35, [], false),
+    R("r1", "c1", 5, "2026-06-18", "Bagno", "Sostituzione miscelatore lavabo e riparazione scarico", 2, 35, [art("Miscelatore monocomando", 48.5), art("Sifone a bottiglia", 9.9)], false),
+    R("r2", "c2", 4, "2026-06-16", "Scala B - cantina", "Riparazione perdita su colonna acqua fredda", 3.5, 35, [art("Tubo multistrato e raccordi", 22), art("Guarnizioni varie", 6.5)], false),
+    R("r3", "c3", 3, "2026-06-12", "Cucina", "Disostruzione scarico lavello e sostituzione sifone", 1.5, 40, [art("Sifone doppio inox", 28)], false),
+    R("r4", "c4", 2, "2026-06-10", "Cantiere Via Po", "Posa tubazioni bagno appartamento 3", 6, 38, [art("Tubo multistrato 16mm (rotolo)", 65), art("Collettore 2 vie", 34), art("Minuteria e fissaggi", 18)], false),
+    R("r5", "c1", 1, "2026-05-28", "Cucina", "Installazione lavastoviglie e attacco acqua", 1, 35, [art("Rubinetto sottolavello", 7.5), art("Tubo di carico", 5)], true),
+  ];
+  const RI = (id, clienteId, data, descrizione, stato) => ({ id, clienteId, data, descrizione, stato, createdAt: ts(data) });
+  const richieste = [
+    RI("ri2", "c3", "2026-06-23", "Perde acqua sotto il bancone del bar, serve intervento urgente prima di sabato.", "da_gestire"),
+    RI("ri1", "c2", "2026-06-22", "Un condomino segnala scarso flusso d'acqua calda al 2 piano, scala A.", "da_gestire"),
+    RI("ri4", "c5", "2026-06-21", "Richiede un preventivo per rifare completamente l'impianto del bagno.", "da_gestire"),
+    RI("ri3", "c1", "2026-06-19", "Il rubinetto della cucina gocciola in continuazione.", "svolto"),
+    RI("ri5", "c4", "2026-06-17", "Richiesta sopralluogo per nuovo cantiere a Pioltello.", "svolto"),
+  ];
+  const azienda = {
+    denominazione: "Termoidraulica Conti di Marco Conti",
+    partitaIva: "12345670961", codiceFiscale: "CNTMRC80A01F205Z", regimeFiscale: "RF01",
+    aliquotaIva: 22, aliquoteIva: [22, 10, 4], costoManodopera: 35, aliquotaManodopera: 22, sezionale: "", logo: "",
+    indirizzo: "Via dei Mestieri 5", cap: "20128", comune: "Milano", provincia: "MI",
+    modalitaPagamento: "MP05", iban: "IT60X0542811101000000123456", numeroProssimo: 1, progressivoInvio: 1,
+  };
+  return { clienti, rapportini, richieste, azienda };
+}
+
 export async function onRequest(context) {
   const { request, env, params } = context;
   const segs = params.path || [];
@@ -160,6 +203,45 @@ export async function onRequest(context) {
       const token = leggiCookie(request, "sessione");
       if (token) await env.DB.prepare("DELETE FROM sessioni WHERE token = ?").bind(token).run();
       return json({ ok: true }, 200, { "Set-Cookie": cookieSessione("", 0) });
+    }
+
+    // --- Registrazione prova gratuita (demo pubblica, 7 giorni) ---
+    if (segs[0] === "register" && method === "POST") {
+      const denom = String(body.denominazione || "").trim();
+      const email = String(body.email || "").trim().toLowerCase();
+      const password = String(body.password || "");
+      if (!denom || !email.includes("@") || password.length < 8)
+        return json({ error: "Inserisci denominazione, un'email valida e una password di almeno 8 caratteri" }, 400);
+      const esiste = await env.DB.prepare("SELECT id FROM utenti WHERE email = ?").bind(email).first();
+      if (esiste) return json({ error: "Esiste gia un account con questa email" }, 409);
+
+      const GIORNI_DEMO = 7;
+      const scadDemo = new Date(Date.now() + GIORNI_DEMO * 86400000).toISOString().slice(0, 10); // YYYY-MM-DD
+      const aid = crypto.randomUUID();
+      const uidNuovo = crypto.randomUUID();
+      const hash = await hashPassword(password);
+      const demo = datiDemo();
+      const aziendaDati = { ...demo.azienda, denominazione: denom, demo: true, demoInizio: new Date().toISOString().slice(0, 10) };
+
+      const stmts = [
+        env.DB.prepare("INSERT INTO aziende (id,denominazione,dati,licenza_scadenza,attiva) VALUES (?,?,?,?,1)")
+          .bind(aid, denom, JSON.stringify(aziendaDati), scadDemo),
+        env.DB.prepare("INSERT INTO utenti (id,email,password_hash,ruolo,azienda_id,nome) VALUES (?,?,?,'azienda',?,?)")
+          .bind(uidNuovo, email, hash, aid, denom),
+      ];
+      for (const coll of ["clienti", "rapportini", "richieste"]) {
+        for (const item of demo[coll]) {
+          stmts.push(env.DB.prepare(`INSERT INTO ${coll} (id,azienda_id,dati) VALUES (?,?,?)`)
+            .bind(String(item.id), aid, JSON.stringify(item)));
+        }
+      }
+      await env.DB.batch(stmts);
+
+      // login automatico subito dopo la registrazione
+      const token = tokenCasuale();
+      const sessScad = new Date(Date.now() + SESSION_GIORNI * 86400000).toISOString();
+      await env.DB.prepare("INSERT INTO sessioni (token,utente_id,scadenza) VALUES (?,?,?)").bind(token, uidNuovo, sessScad).run();
+      return json({ ok: true, ruolo: "azienda", scadenzaDemo: scadDemo }, 200, { "Set-Cookie": cookieSessione(token, SESSION_GIORNI * 86400) });
     }
 
     // Da qui in poi serve l'autenticazione
