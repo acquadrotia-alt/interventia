@@ -7,7 +7,7 @@
 // Variabile d'ambiente richiesta: SETUP_TOKEN (per creare il reseller).
 // ============================================================
 
-const COLLEZIONI = ["clienti", "rapportini", "richieste", "fatture", "appuntamenti"];
+const COLLEZIONI = ["clienti", "rapportini", "richieste", "fatture", "appuntamenti", "ordini"];
 const SESSION_GIORNI = 30;
 
 const enc = new TextEncoder();
@@ -384,6 +384,7 @@ export async function onRequest(context) {
           env.DB.prepare("DELETE FROM rapportini WHERE azienda_id = ?").bind(aid),
           env.DB.prepare("DELETE FROM richieste WHERE azienda_id = ?").bind(aid),
           env.DB.prepare("DELETE FROM appuntamenti WHERE azienda_id = ?").bind(aid),
+          env.DB.prepare("DELETE FROM ordini WHERE azienda_id = ?").bind(aid),
           env.DB.prepare("DELETE FROM fatture WHERE azienda_id = ?").bind(aid),
           env.DB.prepare("DELETE FROM utenti WHERE azienda_id = ?").bind(aid),
           env.DB.prepare("DELETE FROM aziende WHERE id = ?").bind(aid),
