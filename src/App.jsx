@@ -16,11 +16,12 @@ const K_SEED = "idraulico_v1_demo_seeded";
 const K_AZIENDA = "idraulico_v1_azienda";
 const K_FATTURE = "idraulico_v1_fatture";
 const K_LICENZE = "idraulico_v1_licenze";
+const K_APP = "idraulico_v1_appuntamenti";
 
 const hasStore = true;
 
 // Mappa chiave -> collezione API
-const COLL = { [K_CLIENTI]: "clienti", [K_RAPP]: "rapportini", [K_RICH]: "richieste", [K_FATTURE]: "fatture" };
+const COLL = { [K_CLIENTI]: "clienti", [K_RAPP]: "rapportini", [K_RICH]: "richieste", [K_FATTURE]: "fatture", [K_APP]: "appuntamenti" };
 
 async function apiGet(path) {
   const r = await fetch("/api" + path, { credentials: "include" });
@@ -944,6 +945,8 @@ export default function App() {
   const [richieste, setRichieste] = useState([]);
   const [azienda, setAzienda] = useState(null);
   const [fatture, setFatture] = useState([]);
+  const [appuntamenti, setAppuntamenti] = useState([]);
+  const [appForm, setAppForm] = useState(null); // appuntamento in modifica/creazione
   const [tab, setTab] = useState("rapportini");
   const [detailCliId, setDetailCliId] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -970,12 +973,14 @@ export default function App() {
       if (changed) saveArr(K_AZIENDA, az);
     }
     const ft = await loadArr(K_FATTURE);
+    const ap = await loadArr(K_APP);
     c = c.map(migrateCliente);
     setClienti(c);
     setRapportini(r);
     setRichieste(ri);
     setAzienda(az);
     setFatture(ft);
+    setAppuntamenti(ap);
   };
 
   const boot = async (showGreet) => {
@@ -1023,6 +1028,47 @@ export default function App() {
   };
   const deleteFattura = (id) => persistFatture(fatture.filter((f) => f.id !== id));
 
+  const persistApp = (next) => { setAppuntamenti(next); saveArr(K_APP, next); };
+  const emptyAppuntamento = () => ({ id: "", data: todayISO(), ora: "09:00", durata: 60, clienteId: "", clienteNome: "", titolo: "", luogo: "", note: "", stato: "da_fare", richiestaId: "" });
+  const openNuovoApp = (prefill) => setAppForm({ ...emptyAppuntamento(), ...(prefill || {}) });
+  const openEditApp = (a) => setAppForm({ ...a });
+  const saveApp = () => {
+    const f = appForm;
+    if (!f || !(f.titolo || "").trim() || !f.data || !f.ora) return;
+    const cli = f.clienteId ? clienti.find((c) => c.id === f.clienteId) : null;
+    const rec = {
+      id: f.id || uid(),
+      data: f.data,
+      ora: f.ora,
+      durata: Number(f.durata) > 0 ? Number(f.durata) : 60,
+      clienteId: f.clienteId || "",
+      clienteNome: cli ? nomeCliente(cli) : (f.clienteNome || ""),
+      titolo: f.titolo.trim(),
+      luogo: (f.luogo || "").trim(),
+      note: (f.note || "").trim(),
+      stato: f.stato || "da_fare",
+      richiestaId: f.richiestaId || "",
+      createdAt: f.createdAt || Date.now(),
+    };
+    const exists = appuntamenti.some((a) => a.id === rec.id);
+    persistApp(exists ? appuntamenti.map((a) => (a.id === rec.id ? rec : a)) : [...appuntamenti, rec]);
+    setAppForm(null);
+  };
+  const deleteApp = (id) => { persistApp(appuntamenti.filter((a) => a.id !== id)); setAppForm(null); };
+  const toggleApp = (id) => persistApp(appuntamenti.map((a) => (a.id === id ? { ...a, stato: a.stato === "fatto" ? "da_fare" : "fatto" } : a)));
+  const pianificaDaRichiesta = (r) => {
+    const cli = r.clienteId ? clienti.find((c) => c.id === r.clienteId) : null;
+    setTab("agenda");
+    openNuovoApp({
+      clienteId: r.clienteId || "",
+      clienteNome: cli ? nomeCliente(cli) : "",
+      titolo: (r.descrizione || "").trim().slice(0, 80),
+      note: r.descrizione || "",
+      richiestaId: r.id || "",
+      data: todayISO(),
+    });
+  };
+
   const persistLicenze = (next) => { setLicenze(next); saveArr(K_LICENZE, next); };
   const tryLogin = async (email, pwd) => {
     const em = (email || "").trim().toLowerCase();
@@ -1067,7 +1113,7 @@ export default function App() {
   const logout = async () => {
     try { await fetch("/api/logout", { method: "POST", credentials: "include" }); } catch (e) {}
     setAuth(null); setGreet(null); setMenuOpen(false); setDetailCliId(null); setLicenzeOpen(false);
-    setClienti([]); setRapportini([]); setRichieste([]); setFatture([]); setAzienda(null);
+    setClienti([]); setRapportini([]); setRichieste([]); setFatture([]); setAzienda(null); setAppuntamenti([]);
   };
   const createLicenza = (data) => {
     const mesi = Number(data.durataMesi) || 1;
@@ -1331,6 +1377,7 @@ export default function App() {
             </div>
             {[
               ["rapportini", "Rapportini", <IcoDoc key="d" />],
+              ["agenda", "Agenda", <svg key="cal" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 3v3M16 3v3" /></svg>],
               ["assistenza", "Assistenza", <IcoBell key="b" />],
               ["clienti", "Clienti", <IcoUser key="u" />],
               ["fatture", "Fatture", <IcoReceipt key="r" />],
@@ -1384,6 +1431,16 @@ export default function App() {
           />
         )}
 
+        {tab === "agenda" && (
+          <AgendaView
+            appuntamenti={appuntamenti}
+            cliById={cliById}
+            onNew={() => openNuovoApp()}
+            onOpen={openEditApp}
+            onToggle={toggleApp}
+          />
+        )}
+
         {tab === "assistenza" && (
           <AssistenzaView
             richieste={richieste}
@@ -1391,6 +1448,7 @@ export default function App() {
             onNew={openNuovaRich}
             onOpen={openEditRich}
             onToggle={toggleRich}
+            onPlan={pianificaDaRichiesta}
           />
         )}
 
@@ -1470,6 +1528,17 @@ export default function App() {
           onSave={saveRich}
           onClose={() => setRichForm(null)}
           onDelete={richForm.id ? () => deleteRich(richForm.id) : null}
+        />
+      )}
+
+      {appForm && (
+        <AppuntamentoForm
+          form={appForm}
+          setForm={setAppForm}
+          clienti={clienti}
+          onSave={saveApp}
+          onClose={() => setAppForm(null)}
+          onDelete={appForm.id ? () => deleteApp(appForm.id) : null}
         />
       )}
 
@@ -2103,7 +2172,7 @@ function ClienteForm({ form, setForm, onSave, onClose, onDelete }) {
    VISTA ASSISTENZA (richieste dei clienti)
    ============================================================ */
 
-function AssistenzaView({ richieste, cliById, onNew, onOpen, onToggle }) {
+function AssistenzaView({ richieste, cliById, onNew, onOpen, onToggle, onPlan }) {
   const [filtro, setFiltro] = useState("dagestire"); // dagestire | svolti | tutte
   const [search, setSearch] = useState("");
 
@@ -2163,7 +2232,7 @@ function AssistenzaView({ richieste, cliById, onNew, onOpen, onToggle }) {
                   <div className="cli">{cli ? nomeCliente(cli) : "Cliente eliminato"}</div>
                   <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{r.descrizione}</div>
                 </button>
-                <div className="right">
+                <div className="right" style={{ flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
                   <button
                     className={"badge clickable " + (r.stato === "svolto" ? "ok" : "warn")}
                     onClick={() => onToggle(r.id)}
@@ -2171,6 +2240,9 @@ function AssistenzaView({ richieste, cliById, onNew, onOpen, onToggle }) {
                   >
                     <span className="dot" />{r.stato === "svolto" ? "Svolto" : "Da gestire"}
                   </button>
+                  {onPlan && (
+                    <button className="btn btn-sm" onClick={() => onPlan(r)} title="Crea un appuntamento in agenda">📅 Pianifica</button>
+                  )}
                 </div>
               </div>
             );
@@ -2824,6 +2896,187 @@ function AziendaRow({ a, onPatch, onDelete }) {
         <button className="btn btn-sm" onClick={() => onPatch(a.id, { licenzaScadenza: scad || null })}>Salva scadenza</button>
         <button className="btn btn-sm" onClick={() => onPatch(a.id, { attiva: attiva ? 0 : 1 })}>{attiva ? "Disattiva" : "Attiva"}</button>
         <button className="btn btn-danger btn-sm" onClick={() => onDelete(a.id)}>Elimina</button>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   AGENDA — appuntamenti del giorno + sincronizzazione Google (ICS)
+   ============================================================ */
+
+function AgendaView({ appuntamenti, cliById, onNew, onOpen, onToggle }) {
+  const [giorno, setGiorno] = useState(todayISO());
+  const [gcalOpen, setGcalOpen] = useState(false);
+  const [gcalUrl, setGcalUrl] = useState("");
+  const [gcalBusy, setGcalBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const shift = (n) => {
+    const d = new Date(giorno + "T12:00:00");
+    d.setDate(d.getDate() + n);
+    setGiorno(d.toISOString().slice(0, 10));
+  };
+
+  const list = useMemo(
+    () => appuntamenti.filter((a) => a.data === giorno).sort((a, b) => (a.ora || "").localeCompare(b.ora || "")),
+    [appuntamenti, giorno]
+  );
+
+  const apriGoogle = async () => {
+    setGcalOpen(true);
+    if (gcalUrl) return;
+    setGcalBusy(true);
+    try {
+      const r = await fetch("/api/agenda/url", { credentials: "include" });
+      const d = await r.json();
+      if (d.url) setGcalUrl(d.url);
+    } catch (e) {}
+    setGcalBusy(false);
+  };
+  const copia = async () => {
+    try { await navigator.clipboard.writeText(gcalUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch (e) {}
+  };
+
+  const label = (() => {
+    const s = new Date(giorno + "T12:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  })();
+  const isOggi = giorno === todayISO();
+
+  return (
+    <>
+      <div className="page-head">
+        <h1>Agenda</h1>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <button className="btn" onClick={apriGoogle} title="Sincronizza con Google Calendar">📆 Google Calendar</button>
+          <button className="btn btn-primary" onClick={onNew}>＋ Nuovo appuntamento</button>
+        </div>
+      </div>
+
+      {gcalOpen && (
+        <div className="card" style={{ padding: 14, marginBottom: 14, background: "#FBF8F5" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <strong style={{ fontSize: 14 }}>Sincronizza con Google Calendar</strong>
+            <button className="icon-x" onClick={() => setGcalOpen(false)}>×</button>
+          </div>
+          {gcalBusy ? (
+            <div className="help">Preparazione del link…</div>
+          ) : gcalUrl ? (
+            <>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <input className="input" readOnly value={gcalUrl} onFocus={(e) => e.target.select()} style={{ flex: 1, minWidth: 220, fontSize: 12 }} />
+                <button className="btn btn-sm" onClick={copia}>{copied ? "Copiato!" : "Copia"}</button>
+              </div>
+              <div className="help" style={{ marginTop: 8, lineHeight: 1.5 }}>
+                In Google Calendar (da computer): <b>Altri calendari → + → Da URL</b>, incolla questo indirizzo e conferma. Gli appuntamenti compariranno da soli; Google aggiorna ogni alcune ore, quindi i nuovi possono metterci un po'. La sincronizzazione è di sola lettura.
+              </div>
+            </>
+          ) : (
+            <div className="help">Non riesco a recuperare il link. Riprova.</div>
+          )}
+        </div>
+      )}
+
+      <div className="page-head" style={{ marginTop: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <button className="btn btn-sm" onClick={() => shift(-1)} aria-label="Giorno precedente">‹</button>
+          <div style={{ minWidth: 190, textAlign: "center", fontWeight: 700 }}>{label}{isOggi ? " · Oggi" : ""}</div>
+          <button className="btn btn-sm" onClick={() => shift(1)} aria-label="Giorno successivo">›</button>
+          {!isOggi && <button className="btn btn-sm" onClick={() => setGiorno(todayISO())}>Oggi</button>}
+        </div>
+      </div>
+
+      {list.length === 0 ? (
+        <div className="card empty">
+          <div className="e-ic" style={{ fontSize: 24 }}>📅</div>
+          <h3>Nessun appuntamento per questo giorno</h3>
+          <p>Aggiungilo manualmente, oppure pianificalo dalla sezione Assistenza.</p>
+          <button className="btn btn-primary" onClick={onNew}>＋ Nuovo appuntamento</button>
+        </div>
+      ) : (
+        <div className="stack">
+          {list.map((a) => (
+            <div key={a.id} className="rapp" style={{ cursor: "default", alignItems: "flex-start" }}>
+              <div className="when" style={{ width: 66, paddingTop: 2 }}>
+                <div className="d num" style={{ fontSize: 16 }}>{a.ora || "—"}</div>
+                <div style={{ fontSize: 11, color: "var(--muted)" }}>{a.durata ? a.durata + " min" : ""}</div>
+              </div>
+              <button className="body" style={{ border: "none", background: "none", textAlign: "left", padding: 0 }} onClick={() => onOpen(a)}>
+                <div className="cli">{a.titolo}</div>
+                <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 3 }}>
+                  {[a.clienteNome, a.luogo].filter(Boolean).join(" · ") || "—"}
+                </div>
+              </button>
+              <div className="right">
+                <button
+                  className={"badge clickable " + (a.stato === "fatto" ? "ok" : "warn")}
+                  onClick={() => onToggle(a.id)}
+                  title="Tocca per cambiare stato"
+                >
+                  <span className="dot" />{a.stato === "fatto" ? "Fatto" : "Da fare"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ============================================================
+   FORM APPUNTAMENTO
+   ============================================================ */
+
+function AppuntamentoForm({ form, setForm, clienti, onSave, onClose, onDelete }) {
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const canSave = !!(form.titolo || "").trim() && !!form.data && !!form.ora;
+  return (
+    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-head">
+          <h2>{form.id ? "Modifica appuntamento" : "Nuovo appuntamento"}</h2>
+          <button className="icon-x" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          <div className="field">
+            <span className="label">Cliente</span>
+            <select className="select" value={form.clienteId || ""} onChange={(e) => set("clienteId", e.target.value)}>
+              <option value="">— Nessuno —</option>
+              {clienti.map((c) => <option key={c.id} value={c.id}>{nomeCliente(c)}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <span className="label">Descrizione intervento *</span>
+            <input className="input" value={form.titolo} onChange={(e) => set("titolo", e.target.value)} placeholder="Es. Sostituzione caldaia" autoFocus />
+          </div>
+          <div className="row2">
+            <div className="field"><span className="label">Data *</span><input type="date" className="input" value={form.data} onChange={(e) => set("data", e.target.value)} /></div>
+            <div className="field"><span className="label">Ora *</span><input type="time" className="input" value={form.ora} onChange={(e) => set("ora", e.target.value)} /></div>
+          </div>
+          <div className="field">
+            <span className="label">Durata</span>
+            <select className="select" value={String(form.durata || 60)} onChange={(e) => set("durata", Number(e.target.value))}>
+              {[["30", "30 minuti"], ["60", "1 ora"], ["90", "1 ora e 30"], ["120", "2 ore"], ["180", "3 ore"], ["240", "Mezza giornata"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+          <div className="field"><span className="label">Luogo</span><input className="input" value={form.luogo} onChange={(e) => set("luogo", e.target.value)} placeholder="Indirizzo o riferimento" /></div>
+          <div className="field"><span className="label">Note</span><textarea className="textarea" value={form.note} onChange={(e) => set("note", e.target.value)} /></div>
+          <div className="field">
+            <span className="label">Stato</span>
+            <div style={{ display: "flex", gap: 8 }}>
+              {[["da_fare", "Da fare"], ["fatto", "Fatto"]].map(([k, lab]) => (
+                <button key={k} className={"btn" + (form.stato === k ? " btn-primary" : "")} style={{ flex: 1, justifyContent: "center" }} onClick={() => set("stato", k)}>{lab}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="modal-foot">
+          {onDelete && <button className="btn btn-danger" style={{ marginRight: "auto" }} onClick={onDelete}>Elimina</button>}
+          <button className="btn" onClick={onClose}>Annulla</button>
+          <button className="btn btn-primary" disabled={!canSave} onClick={onSave}>Salva appuntamento</button>
+        </div>
       </div>
     </div>
   );
