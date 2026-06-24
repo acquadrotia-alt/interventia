@@ -17,11 +17,12 @@ const K_AZIENDA = "idraulico_v1_azienda";
 const K_FATTURE = "idraulico_v1_fatture";
 const K_LICENZE = "idraulico_v1_licenze";
 const K_APP = "idraulico_v1_appuntamenti";
+const K_ORD = "idraulico_v1_ordini_materiale";
 
 const hasStore = true;
 
 // Mappa chiave -> collezione API
-const COLL = { [K_CLIENTI]: "clienti", [K_RAPP]: "rapportini", [K_RICH]: "richieste", [K_FATTURE]: "fatture", [K_APP]: "appuntamenti" };
+const COLL = { [K_CLIENTI]: "clienti", [K_RAPP]: "rapportini", [K_RICH]: "richieste", [K_FATTURE]: "fatture", [K_APP]: "appuntamenti", [K_ORD]: "ordini" };
 
 async function apiGet(path) {
   const r = await fetch("/api" + path, { credentials: "include" });
@@ -300,6 +301,7 @@ const emptyAzienda = () => ({
   provincia: "",
   modalitaPagamento: "MP05",
   iban: "",
+  mabaTelefono: "",
   numeroProssimo: 1,
   progressivoInvio: 1,
 });
@@ -946,6 +948,7 @@ export default function App() {
   const [azienda, setAzienda] = useState(null);
   const [fatture, setFatture] = useState([]);
   const [appuntamenti, setAppuntamenti] = useState([]);
+  const [ordiniMateriale, setOrdiniMateriale] = useState([]);
   const [appForm, setAppForm] = useState(null); // appuntamento in modifica/creazione
   const [tab, setTab] = useState("rapportini");
   const [detailCliId, setDetailCliId] = useState(null);
@@ -959,6 +962,7 @@ export default function App() {
   const [auth, setAuth] = useState(null); // sessione: null = login richiesto
   const [licenze, setLicenze] = useState([]);
   const [licenzeOpen, setLicenzeOpen] = useState(false);
+  const [assistOpen, setAssistOpen] = useState(false);
   const [greet, setGreet] = useState(null);
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
@@ -974,6 +978,10 @@ export default function App() {
     }
     const ft = await loadArr(K_FATTURE);
     const ap = await loadArr(K_APP);
+    const ordRaw = await loadArr(K_ORD);
+    const SETT = 7 * 86400000;
+    const ord = ordRaw.filter((o) => Date.now() - (o.createdAt || 0) < SETT);
+    if (ord.length !== ordRaw.length) saveArr(K_ORD, ord); // auto-svuota i più vecchi di una settimana
     c = c.map(migrateCliente);
     setClienti(c);
     setRapportini(r);
@@ -981,6 +989,7 @@ export default function App() {
     setAzienda(az);
     setFatture(ft);
     setAppuntamenti(ap);
+    setOrdiniMateriale(ord);
   };
 
   const boot = async (showGreet) => {
@@ -1069,6 +1078,13 @@ export default function App() {
     });
   };
 
+  const SETTIMANA_MS = 7 * 86400000;
+  const persistOrdini = (next) => { setOrdiniMateriale(next); saveArr(K_ORD, next); };
+  const salvaOrdineMateriale = (order) => {
+    const recenti = [order, ...ordiniMateriale].filter((o) => Date.now() - (o.createdAt || 0) < SETTIMANA_MS);
+    persistOrdini(recenti);
+  };
+
   const persistLicenze = (next) => { setLicenze(next); saveArr(K_LICENZE, next); };
   const tryLogin = async (email, pwd) => {
     const em = (email || "").trim().toLowerCase();
@@ -1113,7 +1129,7 @@ export default function App() {
   const logout = async () => {
     try { await fetch("/api/logout", { method: "POST", credentials: "include" }); } catch (e) {}
     setAuth(null); setGreet(null); setMenuOpen(false); setDetailCliId(null); setLicenzeOpen(false);
-    setClienti([]); setRapportini([]); setRichieste([]); setFatture([]); setAzienda(null); setAppuntamenti([]);
+    setClienti([]); setRapportini([]); setRichieste([]); setFatture([]); setAzienda(null); setAppuntamenti([]); setOrdiniMateriale([]);
   };
   const createLicenza = (data) => {
     const mesi = Number(data.durataMesi) || 1;
@@ -1381,6 +1397,7 @@ export default function App() {
               ["assistenza", "Assistenza", <IcoBell key="b" />],
               ["clienti", "Clienti", <IcoUser key="u" />],
               ["fatture", "Fatture", <IcoReceipt key="r" />],
+              ["materiale", "Materiale MABA", <svg key="pkg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8l-9-5-9 5v8l9 5 9-5z" /><path d="M3.3 7 12 12l8.7-5M12 12v9" /></svg>],
             ].map(([k, lab, ico]) => (
               <button
                 key={k}
@@ -1396,6 +1413,10 @@ export default function App() {
               <button className="drawer-item" onClick={() => { setAziendaForm(azienda || emptyAzienda()); setMenuOpen(false); }}>
                 <span className="di-ic"><IcoGear /></span>
                 <span style={{ flex: 1 }}>Dati azienda</span>
+              </button>
+              <button className="drawer-item" onClick={() => { setAssistOpen(true); setMenuOpen(false); }}>
+                <span className="di-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13v-1a7 7 0 0 1 14 0v1" /><path d="M5 13a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h1v-4H5zM19 13a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-1v-4h1z" /><path d="M19 17v1a3 3 0 0 1-3 3h-2" /></svg></span>
+                <span style={{ flex: 1 }}>Richiedi assistenza</span>
               </button>
               {auth.role === "reseller" && (
                 <button className="drawer-item" onClick={() => { setLicenzeOpen(true); setMenuOpen(false); }}>
@@ -1496,6 +1517,14 @@ export default function App() {
             onDownload={(f) => download(f.filename, f.xml, "application/xml")}
           />
         )}
+
+        {tab === "materiale" && (
+          <MaterialeView
+            azienda={azienda}
+            ordini={ordiniMateriale}
+            onSave={salvaOrdineMateriale}
+          />
+        )}
       </main>
 
       {rappForm && (
@@ -1541,6 +1570,8 @@ export default function App() {
           onDelete={appForm.id ? () => deleteApp(appForm.id) : null}
         />
       )}
+
+      {assistOpen && <RichiediAssistenzaModal onClose={() => setAssistOpen(false)} />}
 
       {aziendaForm && (
         <AziendaForm
@@ -2464,6 +2495,11 @@ function AziendaForm({ form, setForm, onSave, onClose }) {
             <span className="label">IBAN (facoltativo)</span>
             <input className="input" value={form.iban} onChange={(e) => set("iban", e.target.value)} placeholder="IT..." />
           </div>
+          <div className="field">
+            <span className="label">Numero WhatsApp MABA (per richiesta materiale)</span>
+            <input className="input" value={form.mabaTelefono || ""} onChange={(e) => set("mabaTelefono", e.target.value)} placeholder="es. 39 333 1234567" />
+            <div className="help" style={{ marginTop: 6 }}>È il numero a cui vengono inviati gli ordini di materiale dalla sezione “Richiedi materiale - MABA”. Inseriscilo con il prefisso internazionale (39 per l'Italia).</div>
+          </div>
         </div>
         <div className="modal-foot">
           <button className="btn" onClick={onClose}>Annulla</button>
@@ -3079,5 +3115,203 @@ function AppuntamentoForm({ form, setForm, clienti, onSave, onClose, onDelete })
         </div>
       </div>
     </div>
+  );
+}
+
+/* ============================================================
+   RICHIEDI ASSISTENZA — recapiti del rivenditore
+   ============================================================ */
+
+function RichiediAssistenzaModal({ onClose }) {
+  const email = "assistenza@cmav.it";
+  const tel = "+393920241955";
+  const telDisplay = "392 024 1955";
+  const wa = "https://wa.me/393920241955?text=" + encodeURIComponent("Ciao, ho bisogno di assistenza con interventia.");
+  const chip = (bg) => ({ width: 40, height: 40, borderRadius: 10, background: bg, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" });
+  const rowStyle = { display: "flex", alignItems: "center", gap: 12, padding: 14, textDecoration: "none", color: "inherit", marginBottom: 10 };
+  return (
+    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 440 }}>
+        <div className="modal-head">
+          <h2>Richiedi assistenza</h2>
+          <button className="icon-x" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          <div style={{ textAlign: "center", marginBottom: 18 }}>
+            <img src={LOGO_REALIZZATORE} alt="Office Solution" style={{ height: 56 }} />
+            <div style={{ color: "var(--muted)", fontSize: 13.5, marginTop: 10, lineHeight: 1.45 }}>
+              Hai bisogno di aiuto con interventia? Scrivici o chiamaci, ti rispondiamo noi.
+            </div>
+          </div>
+
+          <a href={"mailto:" + email} className="card" style={rowStyle}>
+            <span style={chip("#C2570E")}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+            </span>
+            <span style={{ flex: 1 }}>
+              <span style={{ display: "block", fontWeight: 700, fontSize: 14 }}>Email</span>
+              <span style={{ display: "block", color: "var(--muted)", fontSize: 13 }}>{email}</span>
+            </span>
+            <span style={{ color: "var(--muted)" }}>›</span>
+          </a>
+
+          <a href={"tel:" + tel} className="card" style={rowStyle}>
+            <span style={chip("#2b7a3b")}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" /></svg>
+            </span>
+            <span style={{ flex: 1 }}>
+              <span style={{ display: "block", fontWeight: 700, fontSize: 14 }}>Chiama</span>
+              <span style={{ display: "block", color: "var(--muted)", fontSize: 13 }}>{telDisplay}</span>
+            </span>
+            <span style={{ color: "var(--muted)" }}>›</span>
+          </a>
+
+          <a href={wa} target="_blank" rel="noopener noreferrer" className="card" style={rowStyle}>
+            <span style={chip("#25D366")}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 21l2.2-5.2A8.5 8.5 0 1 1 21 11.5z" /><path d="M8.5 9.7c0 3 2.3 5.3 5.3 5.3" /></svg>
+            </span>
+            <span style={{ flex: 1 }}>
+              <span style={{ display: "block", fontWeight: 700, fontSize: 14 }}>WhatsApp</span>
+              <span style={{ display: "block", color: "var(--muted)", fontSize: 13 }}>Scrivici su WhatsApp · {telDisplay}</span>
+            </span>
+            <span style={{ color: "var(--muted)" }}>›</span>
+          </a>
+        </div>
+        <div className="modal-foot">
+          <button className="btn" onClick={onClose}>Chiudi</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   RICHIEDI MATERIALE - MABA (ordini + invio WhatsApp + storico 7 giorni)
+   ============================================================ */
+
+function MaterialeView({ azienda, ordini, onSave }) {
+  const [rif, setRif] = useState("");
+  const [righe, setRighe] = useState([{ descrizione: "", quantita: "" }]);
+  const [storicoOpen, setStoricoOpen] = useState(false);
+  const [inviato, setInviato] = useState(false);
+
+  const numero = (azienda && azienda.mabaTelefono) || "";
+  const hasNum = String(numero).replace(/\D/g, "").length >= 8;
+
+  const setRiga = (i, k, v) => setRighe((rs) => rs.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
+  const addRiga = () => setRighe((rs) => [...rs, { descrizione: "", quantita: "" }]);
+  const delRiga = (i) => setRighe((rs) => (rs.length > 1 ? rs.filter((_, j) => j !== i) : rs));
+
+  const prodottiValidi = righe.filter((r) => (r.descrizione || "").trim());
+  const canSave = !!rif.trim() && prodottiValidi.length > 0;
+
+  const waNumber = (n) => {
+    let d = String(n || "").replace(/\D/g, "");
+    if (d.length === 10 && d.startsWith("3")) d = "39" + d;
+    return d;
+  };
+  const buildText = (order) => {
+    const righeTxt = order.prodotti.map((p) => "- " + p.descrizione + (p.quantita ? "  (qta " + p.quantita + ")" : "")).join("\n");
+    return "*Richiesta materiale - interventia*\n" +
+      "Riferimento: " + order.riferimento + "\n\n" +
+      righeTxt + "\n\n" +
+      "Da: " + ((azienda && azienda.denominazione) || "");
+  };
+  const apriWhatsApp = (order) => {
+    const url = "https://wa.me/" + waNumber(numero) + "?text=" + encodeURIComponent(buildText(order));
+    window.open(url, "_blank");
+  };
+
+  const salva = () => {
+    if (!canSave) return;
+    const order = {
+      id: uid(),
+      riferimento: rif.trim(),
+      prodotti: prodottiValidi.map((r) => ({ descrizione: r.descrizione.trim(), quantita: String(r.quantita || "").trim() })),
+      createdAt: Date.now(),
+    };
+    onSave(order);
+    if (hasNum) apriWhatsApp(order);
+    setRif("");
+    setRighe([{ descrizione: "", quantita: "" }]);
+    setInviato(true);
+    setTimeout(() => setInviato(false), 3500);
+  };
+
+  const fmtQuando = (ms) => {
+    try { return new Date(ms).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); } catch (e) { return ""; }
+  };
+
+  return (
+    <>
+      <div className="page-head">
+        <h1>Richiedi materiale — MABA</h1>
+        <button className="btn" onClick={() => setStoricoOpen((v) => !v)}>
+          {storicoOpen ? "Nuovo ordine" : "Storico (" + ordini.length + ")"}
+        </button>
+      </div>
+
+      {!hasNum && (
+        <div className="banner" style={{ borderColor: "#f6c9a6", marginBottom: 14 }}>
+          <span>Per inviare gli ordini su WhatsApp, imposta il <b>numero MABA</b> in “Dati azienda”. Per ora puoi comunque salvarli nello storico.</span>
+        </div>
+      )}
+
+      {!storicoOpen ? (
+        <div className="card" style={{ padding: 16 }}>
+          <div className="field">
+            <span className="label">Riferimento cliente / cantiere *</span>
+            <input className="input" value={rif} onChange={(e) => setRif(e.target.value)} placeholder="Es. Cantiere Via Roma 12 - Rossi" autoFocus />
+          </div>
+
+          <div className="field">
+            <span className="label">Prodotti</span>
+            <div className="stack" style={{ gap: 8 }}>
+              {righe.map((r, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input className="input" style={{ flex: 1 }} value={r.descrizione} onChange={(e) => setRiga(i, "descrizione", e.target.value)} placeholder="Descrizione prodotto" />
+                  <input className="input" style={{ width: 92 }} value={r.quantita} onChange={(e) => setRiga(i, "quantita", e.target.value)} placeholder="Qtà" />
+                  <button className="icon-x" onClick={() => delRiga(i)} title="Rimuovi prodotto" disabled={righe.length === 1} style={{ flex: "0 0 auto" }}>×</button>
+                </div>
+              ))}
+            </div>
+            <button className="btn btn-sm" style={{ marginTop: 10 }} onClick={addRiga}>＋ Aggiungi altro prodotto</button>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} disabled={!canSave} onClick={salva}>
+              {hasNum ? "Salva e invia su WhatsApp" : "Salva ordine"}
+            </button>
+            {inviato && (
+              <div className="help" style={{ textAlign: "center", marginTop: 8, color: "var(--petrol-dark)" }}>
+                Ordine salvato{hasNum ? " — apertura di WhatsApp…" : "."}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : ordini.length === 0 ? (
+        <div className="card empty">
+          <div className="e-ic" style={{ fontSize: 24 }}>📦</div>
+          <h3>Nessun ordine recente</h3>
+          <p>Gli ordini inviati restano qui per una settimana, poi si cancellano da soli.</p>
+        </div>
+      ) : (
+        <div className="stack">
+          <div className="help" style={{ marginBottom: 4 }}>Gli ordini si cancellano da soli dopo 7 giorni.</div>
+          {ordini.map((o) => (
+            <div key={o.id} className="card" style={{ padding: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}>
+                <strong style={{ fontSize: 14 }}>{o.riferimento}</strong>
+                <span style={{ color: "var(--muted)", fontSize: 12 }}>{fmtQuando(o.createdAt)}</span>
+              </div>
+              <ul style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 13, color: "#3a2f28" }}>
+                {o.prodotti.map((p, j) => <li key={j}>{p.descrizione}{p.quantita ? " — qtà " + p.quantita : ""}</li>)}
+              </ul>
+              {hasNum && <button className="btn btn-sm" style={{ marginTop: 10 }} onClick={() => apriWhatsApp(o)}>Invia di nuovo su WhatsApp</button>}
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
