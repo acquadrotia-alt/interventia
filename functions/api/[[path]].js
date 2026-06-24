@@ -7,7 +7,7 @@
 // Variabile d'ambiente richiesta: SETUP_TOKEN (per creare il reseller).
 // ============================================================
 
-const COLLEZIONI = ["clienti", "rapportini", "richieste", "fatture"];
+const COLLEZIONI = ["clienti", "rapportini", "richieste", "fatture", "appuntamenti"];
 const SESSION_GIORNI = 30;
 
 const enc = new TextEncoder();
@@ -140,13 +140,71 @@ function datiDemo() {
     indirizzo: "Via dei Mestieri 5", cap: "20128", comune: "Milano", provincia: "MI",
     modalitaPagamento: "MP05", iban: "IT60X0542811101000000123456", numeroProssimo: 1, progressivoInvio: 1,
   };
-  return { clienti, rapportini, richieste, azienda };
+  const oggi = new Date();
+  const fmt = (d) => d.toISOString().slice(0, 10);
+  const dPlus = (n) => { const x = new Date(oggi); x.setDate(x.getDate() + n); return fmt(x); };
+  const appuntamenti = [
+    { id: "a1", data: dPlus(0), ora: "09:30", durata: 60, clienteId: "c2", clienteNome: "Condominio Aurora", titolo: "Controllo perdita colonna acqua fredda", luogo: "Scala B - cantina", note: "Portare raccordi multistrato", stato: "da_fare", richiestaId: "", createdAt: Date.now() },
+    { id: "a2", data: dPlus(0), ora: "14:00", durata: 90, clienteId: "c3", clienteNome: "Bar Centrale di Bianchi Luca", titolo: "Intervento urgente perdita sotto il bancone", luogo: "Piazza Roma 3", note: "", stato: "da_fare", richiestaId: "ri2", createdAt: Date.now() },
+    { id: "a3", data: dPlus(1), ora: "10:00", durata: 60, clienteId: "c5", clienteNome: "Giulia Ferrari", titolo: "Sopralluogo rifacimento bagno", luogo: "Via Manzoni 7, Monza", note: "Preparare preventivo", stato: "da_fare", richiestaId: "ri4", createdAt: Date.now() },
+  ];
+  return { clienti, rapportini, richieste, appuntamenti, azienda };
+}
+
+// Genera un calendario ICS (iCalendar) dagli appuntamenti
+function icsEscape(s) {
+  return String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+function icsStampUTC(ms) {
+  const d = new Date(ms);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}T${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}Z`;
+}
+function icsFloating(ms) {
+  const d = new Date(ms);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}T${p(d.getUTCHours())}${p(d.getUTCMinutes())}00`;
+}
+function costruisciICS(nomeAzienda, appuntamenti) {
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//interventia//agenda//IT",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    `X-WR-CALNAME:${icsEscape("interventia - " + (nomeAzienda || "Agenda"))}`,
+  ];
+  const stamp = icsStampUTC(Date.now());
+  for (const a of appuntamenti) {
+    if (!a || !a.data) continue;
+    const ora = (a.ora && /^\d{2}:\d{2}$/.test(a.ora)) ? a.ora : "09:00";
+    const startMs = Date.parse(`${a.data}T${ora}:00Z`);
+    if (isNaN(startMs)) continue;
+    const durata = Number(a.durata) > 0 ? Number(a.durata) : 60;
+    const endMs = startMs + durata * 60000;
+    const titolo = [a.clienteNome, a.titolo].filter(Boolean).map((x) => String(x).trim()).filter(Boolean).join(" - ") || "Appuntamento";
+    const descrParts = [];
+    if (a.note) descrParts.push(a.note);
+    if (a.stato === "fatto") descrParts.push("(svolto)");
+    lines.push("BEGIN:VEVENT");
+    lines.push(`UID:${icsEscape(a.id || crypto.randomUUID())}@interventia`);
+    lines.push(`DTSTAMP:${stamp}`);
+    lines.push(`DTSTART:${icsFloating(startMs)}`);
+    lines.push(`DTEND:${icsFloating(endMs)}`);
+    lines.push(`SUMMARY:${icsEscape(titolo)}`);
+    if (a.luogo) lines.push(`LOCATION:${icsEscape(a.luogo)}`);
+    if (descrParts.length) lines.push(`DESCRIPTION:${icsEscape(descrParts.join(" "))}`);
+    lines.push("END:VEVENT");
+  }
+  lines.push("END:VCALENDAR");
+  return lines.join("\r\n");
 }
 
 export async function onRequest(context) {
   const { request, env, params } = context;
   const segs = params.path || [];
   const method = request.method;
+  const url = new URL(request.url);
 
   if (method === "OPTIONS") return new Response(null, { status: 204 });
   if (!env.DB) return json({ error: "Database non collegato (binding DB mancante)" }, 500);
@@ -205,6 +263,25 @@ export async function onRequest(context) {
       return json({ ok: true }, 200, { "Set-Cookie": cookieSessione("", 0) });
     }
 
+    // --- Feed calendario ICS (pubblico, protetto da token) per Google Calendar ---
+    if (segs[0] === "ics" && method === "GET") {
+      const token = url.searchParams.get("token") || "";
+      const vuoto = costruisciICS("Agenda", []);
+      if (!token) return new Response(vuoto, { headers: { "Content-Type": "text/calendar; charset=utf-8" } });
+      const az = await env.DB.prepare("SELECT id, denominazione FROM aziende WHERE cal_token = ?").bind(token).first();
+      if (!az) return new Response(vuoto, { headers: { "Content-Type": "text/calendar; charset=utf-8" } });
+      const r = await env.DB.prepare("SELECT dati FROM appuntamenti WHERE azienda_id = ?").bind(az.id).all();
+      const items = (r.results || []).map((x) => { try { return JSON.parse(x.dati); } catch { return null; } }).filter(Boolean);
+      const ics = costruisciICS(az.denominazione, items);
+      return new Response(ics, {
+        headers: {
+          "Content-Type": "text/calendar; charset=utf-8",
+          "Content-Disposition": 'inline; filename="interventia.ics"',
+          "Cache-Control": "no-cache",
+        },
+      });
+    }
+
     // --- Registrazione prova gratuita (demo pubblica, 7 giorni) ---
     if (segs[0] === "register" && method === "POST") {
       const denom = String(body.denominazione || "").trim();
@@ -229,7 +306,7 @@ export async function onRequest(context) {
         env.DB.prepare("INSERT INTO utenti (id,email,password_hash,ruolo,azienda_id,nome) VALUES (?,?,?,'azienda',?,?)")
           .bind(uidNuovo, email, hash, aid, denom),
       ];
-      for (const coll of ["clienti", "rapportini", "richieste"]) {
+      for (const coll of ["clienti", "rapportini", "richieste", "appuntamenti"]) {
         for (const item of demo[coll]) {
           stmts.push(env.DB.prepare(`INSERT INTO ${coll} (id,azienda_id,dati) VALUES (?,?,?)`)
             .bind(String(item.id), aid, JSON.stringify(item)));
@@ -306,12 +383,25 @@ export async function onRequest(context) {
           env.DB.prepare("DELETE FROM clienti WHERE azienda_id = ?").bind(aid),
           env.DB.prepare("DELETE FROM rapportini WHERE azienda_id = ?").bind(aid),
           env.DB.prepare("DELETE FROM richieste WHERE azienda_id = ?").bind(aid),
+          env.DB.prepare("DELETE FROM appuntamenti WHERE azienda_id = ?").bind(aid),
           env.DB.prepare("DELETE FROM fatture WHERE azienda_id = ?").bind(aid),
           env.DB.prepare("DELETE FROM utenti WHERE azienda_id = ?").bind(aid),
           env.DB.prepare("DELETE FROM aziende WHERE id = ?").bind(aid),
         ]);
         return json({ ok: true });
       }
+    }
+
+    // --- URL del calendario ICS dell'azienda (per abbonarsi da Google) ---
+    if (segs[0] === "agenda" && segs[1] === "url" && method === "GET") {
+      if (me.ruolo !== "azienda" || !me.azienda_id) return json({ error: "Solo per utenti azienda" }, 403);
+      const row = await env.DB.prepare("SELECT cal_token FROM aziende WHERE id = ?").bind(me.azienda_id).first();
+      let token = row && row.cal_token;
+      if (!token) {
+        token = tokenCasuale();
+        await env.DB.prepare("UPDATE aziende SET cal_token = ? WHERE id = ?").bind(token, me.azienda_id).run();
+      }
+      return json({ url: `${url.origin}/api/ics?token=${token}` });
     }
 
     // --- Impostazioni azienda (profilo/fatturazione) dell'utente azienda ---
