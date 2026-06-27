@@ -658,7 +658,7 @@ const Style = () => (
   }
   .app h1,.app h2,.app h3{text-wrap:balance}
   .app p{text-wrap:pretty}
-  button{font-family:inherit;cursor:pointer}
+  button{font-family:inherit;cursor:pointer;color:inherit}
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
   ::selection{background:var(--ink);color:#fff}
 
@@ -730,7 +730,7 @@ const Style = () => (
   .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
   .stack{display:flex;flex-direction:column;gap:10px}
 
-  .rapp{display:flex;align-items:center;gap:16px;padding:16px 18px;text-align:left;width:100%;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-lg);transition:border-color .16s var(--ease),background .16s var(--ease)}
+  .rapp{display:flex;align-items:center;gap:16px;padding:16px 18px;text-align:left;width:100%;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--r-lg);transition:border-color .16s var(--ease),background .16s var(--ease)}
   .rapp:hover{border-color:var(--line-strong);background:var(--surface-2)}
   .rapp .when{width:80px;flex-shrink:0}
   .rapp .when .d{font-weight:600;font-size:15px}
@@ -748,7 +748,7 @@ const Style = () => (
   .dot{width:6px;height:6px;border-radius:99px;background:currentColor}
 
   /* client list */
-  .cli-row{display:flex;align-items:center;gap:14px;padding:14px 18px;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-lg);transition:border-color .16s var(--ease),background .16s var(--ease)}
+  .cli-row{display:flex;align-items:center;gap:14px;padding:14px 18px;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--r-lg);transition:border-color .16s var(--ease),background .16s var(--ease)}
   .cli-row:hover{border-color:var(--line-strong);background:var(--surface-2)}
   .avatar{width:40px;height:40px;border-radius:10px;background:var(--bg-tint);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;flex-shrink:0;font-family:'Schibsted Grotesk',sans-serif;border:1px solid var(--line)}
   .cli-row .nm{font-weight:600;font-size:15px}
@@ -847,6 +847,28 @@ const Style = () => (
     .search{width:150px}
     .art-row{grid-template-columns:1fr 96px 32px}
     .art-row.iva{grid-template-columns:1fr 80px 68px 32px}
+  }
+
+  /* dark mode — segue le impostazioni del sistema */
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0C0C0E; --bg-tint:#19191D; --surface:#151517; --surface-2:#1B1B1F;
+      --ink:#F7F7F8; --ink-2:#C2C2CA; --muted:#9D9DA7; --faint:#74747C;
+      --line:#272729; --line-soft:#1D1D20; --line-strong:#37373D;
+      --petrol:#F7F7F8; --petrol-dark:#FFFFFF; --petrol-soft:#26262B; --petrol-tint:#202026;
+      --copper:#F7F7F8; --copper-soft:#26262B;
+      --green:#4ECB92; --green-soft:#16271F;
+      --amber:#A1A1AA; --amber-soft:#26262B;
+      --danger:#F2716B; --danger-soft:#2A1717;
+      --sh-sm:0 1px 2px rgba(0,0,0,.45);
+      --sh-md:0 1px 3px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.45);
+      --sh-lg:0 24px 56px rgba(0,0,0,.66),0 6px 16px rgba(0,0,0,.46);
+    }
+    .topbar{background:rgba(12,12,14,.8)}
+    .btn-primary,.btn-copper{color:var(--bg)}
+    .btn-primary:hover,.btn-copper:hover{background:#fff;border-color:#fff;color:var(--bg)}
+    .badge.warn{background:var(--surface-2)}
+    ::selection{color:var(--bg)}
   }
   `}</style>
 );
@@ -1406,7 +1428,7 @@ export default function App() {
         if (giorni > 14) return null;
         const urgente = giorni <= 3;
         return (
-          <div style={{ background: urgente ? "#FBECEA" : "#F4F4F5", borderBottom: "1px solid " + (urgente ? "#F1D3CE" : "#E7E7EA"), color: urgente ? "#B42318" : "#52525B", padding: "9px 16px", fontSize: 13, textAlign: "center", lineHeight: 1.4 }}>
+          <div style={{ background: urgente ? "var(--danger-soft)" : "var(--bg-tint)", borderBottom: "1px solid var(--line)", color: urgente ? "var(--danger)" : "var(--ink-2)", padding: "9px 16px", fontSize: 13, textAlign: "center", lineHeight: 1.4 }}>
             {giorni > 1
               ? `La tua versione di prova scade tra ${giorni} giorni (${fmtDate(auth.scadenza)}).`
               : giorni === 1
@@ -1670,7 +1692,7 @@ function RapportiniView({ rapportini, cliById, onNew, onOpen, search, setSearch 
         <h1>Rapportini<span className="count">{rapportini.length}</span></h1>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <input className="search" placeholder="Cerca…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <div style={{ display: "flex", gap: 2, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: 2 }}>
+          <div style={{ display: "flex", gap: 2, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 2 }}>
             {[["tutti", "Tutti"], ["dafatturare", "Da fatturare"], ["fatturati", "Fatturati"]].map(([k, lab]) => (
               <button key={k} className={"tab btn-sm" + (filtro === k ? " active" : "")} style={{ borderRadius: 8 }} onClick={() => setFiltro(k)}>{lab}</button>
             ))}
@@ -2268,7 +2290,7 @@ function AssistenzaView({ richieste, cliById, onNew, onOpen, onToggle, onPlan })
         </h1>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <input className="search" placeholder="Cerca…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <div style={{ display: "flex", gap: 2, background: "#fff", border: "1px solid var(--line)", borderRadius: 10, padding: 2 }}>
+          <div style={{ display: "flex", gap: 2, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 2 }}>
             {[["dagestire", "Da gestire"], ["svolti", "Svolti"], ["tutte", "Tutte"]].map(([k, lab]) => (
               <button key={k} className={"tab btn-sm" + (filtro === k ? " active" : "")} style={{ borderRadius: 8 }} onClick={() => setFiltro(k)}>{lab}</button>
             ))}
