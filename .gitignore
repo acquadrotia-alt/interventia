@@ -1,0 +1,9 @@
+# Dipendenze
+node_modules/
+
+# Output di build (Cloudflare ricostruisce da sorgente con `npm run build`)
+dist/
+
+# Log e file di sistema
+*.log
+.DS_Store
