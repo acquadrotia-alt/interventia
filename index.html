@@ -15,6 +15,11 @@
     <meta property="og:description" content="Rapportini, clienti, assistenza e fatturazione in un'unica app." />
     <meta property="og:image" content="./favicon.svg" />
     <title>interventia — Gestionale interventi</title>
+    <script>
+      // Applica il tema scelto prima del primo paint (evita il flash)
+      try { document.documentElement.setAttribute("data-theme", localStorage.getItem("interventia_tema") || "auto"); }
+      catch (e) { document.documentElement.setAttribute("data-theme", "auto"); }
+    </script>
   </head>
   <body>
     <div id="root"></div>
