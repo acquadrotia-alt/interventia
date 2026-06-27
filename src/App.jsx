@@ -635,7 +635,7 @@ const Style = () => (
   :root{
     /* warm paper canvas — one neutral hue family */
     --bg:#F4F1EC; --bg-tint:#EDE7DE; --surface:#FFFFFF; --surface-2:#FBF8F3;
-    --ink:#211711; --ink-2:#5C4B3F; --muted:#8A7B6E; --faint:#A99B8E;
+    --ink:#211711; --ink-2:#5C4B3F; --muted:#7B6D60; --faint:#817467;
     --line:#E9E0D5; --line-soft:#F3EDE5; --line-strong:#DACDBD;
     /* one confident accent ramp (refined brand orange) */
     --petrol:#EA631A; --petrol-dark:#CB4F0B; --petrol-soft:#FBE7D6; --petrol-tint:#FFF3EA;
@@ -699,7 +699,7 @@ const Style = () => (
   .drawer-item.active .di-ic{color:var(--petrol)}
   @keyframes dr-slide{from{transform:translateX(-100%)}to{transform:translateX(0)}}
   @keyframes dr-fade{from{opacity:0}to{opacity:1}}
-  @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+  @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-delay:0!important;transition-duration:.001ms!important;transition-delay:0!important}}
   .topbar-spacer{flex:1}
 
   .container{max-width:1080px;margin:0 auto;padding:34px 24px 96px}
@@ -721,7 +721,17 @@ const Style = () => (
   .btn-danger:hover{background:var(--danger-soft);border-color:transparent;box-shadow:none}
   .btn-sm{padding:6px 11px;font-size:13px;border-radius:9px}
   .btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
-  .btn:focus-visible,.tab:focus-visible,.icon-btn:focus-visible,.drawer-item:focus-visible,.back:focus-visible{outline:none;box-shadow:0 0 0 3px var(--petrol-tint),0 0 0 1px var(--petrol)}
+  .btn:focus-visible,.tab:focus-visible,.icon-btn:focus-visible,.drawer-item:focus-visible,.back:focus-visible,.rapp:focus-visible,.cli-row:focus-visible{outline:none;box-shadow:0 0 0 3px var(--petrol-tint),0 0 0 1px var(--petrol)}
+  .check:focus-visible{outline:2px solid var(--petrol);outline-offset:2px}
+  /* staggered list entrance — subtle, gated only by motion preference */
+  @keyframes list-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .stack>.rapp,.stack>.cli-row{animation:list-in .42s cubic-bezier(.2,.7,.2,1) both}
+  .stack>*:nth-child(2){animation-delay:.04s}
+  .stack>*:nth-child(3){animation-delay:.08s}
+  .stack>*:nth-child(4){animation-delay:.12s}
+  .stack>*:nth-child(5){animation-delay:.16s}
+  .stack>*:nth-child(6){animation-delay:.2s}
+  .stack>*:nth-child(n+7){animation-delay:.24s}
 
   /* cards */
   .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm)}
