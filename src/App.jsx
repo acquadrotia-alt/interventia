@@ -713,6 +713,8 @@ const Style = () => (
   .btn:active{transform:translateY(0) scale(.98)}
   .btn-primary{background:linear-gradient(180deg,#F2722A,var(--petrol));border-color:var(--petrol-dark);color:#fff;box-shadow:var(--sh-accent)}
   .btn-primary:hover{background:linear-gradient(180deg,var(--petrol),var(--petrol-dark));border-color:var(--petrol-dark);color:#fff}
+  .btn-accent{background:var(--petrol-tint);border-color:#F3D6BF;color:var(--copper);box-shadow:none}
+  .btn-accent:hover{background:var(--petrol-soft);border-color:var(--petrol);color:var(--copper);box-shadow:var(--sh-sm)}
   .btn-copper{background:linear-gradient(180deg,#C25A12,var(--copper));border-color:#974209;color:#fff;box-shadow:0 8px 24px rgba(180,80,12,.22)}
   .btn-copper:hover{filter:brightness(1.05)}
   .btn-ghost{background:none;border-color:transparent;box-shadow:none}
@@ -1756,7 +1758,7 @@ function ClientiView({ clienti, rapportini, onNew, onOpen, search, setSearch }) 
         <h1>Clienti<span className="count">{clienti.length}</span></h1>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <input className="search" placeholder="Cerca cliente…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <button className="btn btn-primary" onClick={onNew}>＋ Nuovo cliente</button>
+          <button className="btn btn-accent" onClick={onNew}>＋ Nuovo cliente</button>
         </div>
       </div>
 
@@ -2281,7 +2283,7 @@ function AssistenzaView({ richieste, cliById, onNew, onOpen, onToggle, onPlan })
               <button key={k} className={"tab btn-sm" + (filtro === k ? " active" : "")} style={{ borderRadius: 8 }} onClick={() => setFiltro(k)}>{lab}</button>
             ))}
           </div>
-          <button className="btn btn-primary" onClick={onNew}>＋ Nuova richiesta</button>
+          <button className="btn btn-accent" onClick={onNew}>＋ Nuova richiesta</button>
         </div>
       </div>
 
@@ -3028,7 +3030,7 @@ function AgendaView({ appuntamenti, cliById, onNew, onOpen, onToggle }) {
         <h1>Agenda</h1>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <button className="btn" onClick={apriGoogle} title="Sincronizza con Google Calendar">📆 Google Calendar</button>
-          <button className="btn btn-primary" onClick={onNew}>＋ Nuovo appuntamento</button>
+          <button className="btn btn-accent" onClick={onNew}>＋ Nuovo appuntamento</button>
         </div>
       </div>
 
