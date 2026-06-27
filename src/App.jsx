@@ -631,7 +631,7 @@ ${logo ? `<img src="${logo}" style="max-height:64px;max-width:240px;object-fit:c
 
 const Style = () => (
   <style>{`
-  @import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap');
   :root{
     /* monochrome editorial — true-neutral canvas, ink text */
     --bg:#FAFAFA; --bg-tint:#F4F4F5; --surface:#FFFFFF; --surface-2:#FBFBFB;
@@ -696,7 +696,7 @@ const Style = () => (
 
   .container{max-width:1080px;margin:0 auto;padding:40px 24px 96px}
   .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap}
-  .page-head h1{font-family:Newsreader,Georgia,serif;font-size:34px;font-weight:500;margin:0;letter-spacing:-.01em;line-height:1.04}
+  .page-head h1{font-family:'Schibsted Grotesk',system-ui,sans-serif;font-size:29px;font-weight:700;margin:0;letter-spacing:-.025em;line-height:1.08}
   .page-head .count{color:var(--faint);font-size:14px;font-weight:400;margin-left:10px}
 
   /* buttons */
@@ -778,7 +778,7 @@ const Style = () => (
   .modal{background:var(--surface);border-radius:var(--r-xl);width:100%;max-width:560px;margin:auto;box-shadow:var(--sh-lg);animation:modal-in .26s var(--ease)}
   @keyframes modal-in{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
   .modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);border-radius:var(--r-xl) var(--r-xl) 0 0;z-index:2}
-  .modal-head h2{font-family:Newsreader,Georgia,serif;font-size:22px;font-weight:500;margin:0;letter-spacing:-.005em}
+  .modal-head h2{font-family:'Schibsted Grotesk',system-ui,sans-serif;font-size:19px;font-weight:700;margin:0;letter-spacing:-.015em}
   .modal-body{padding:22px}
   .modal-foot{display:flex;gap:10px;justify-content:flex-end;padding:16px 22px;border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--surface);border-radius:0 0 var(--r-xl) var(--r-xl)}
   .icon-x{border:none;background:none;color:var(--muted);width:34px;height:34px;border-radius:8px;font-size:20px;line-height:1;transition:all .16s var(--ease)}
@@ -819,7 +819,7 @@ const Style = () => (
   /* empty */
   .empty{text-align:center;padding:64px 20px;color:var(--muted)}
   .empty .e-ic{width:52px;height:52px;border-radius:13px;background:var(--bg-tint);color:var(--ink);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;border:1px solid var(--line)}
-  .empty h3{color:var(--ink);font-size:21px;margin:0 0 6px;font-family:Newsreader,Georgia,serif;font-weight:500}
+  .empty h3{color:var(--ink);font-size:19px;margin:0 0 6px;font-family:'Schibsted Grotesk',system-ui,sans-serif;font-weight:700;letter-spacing:-.015em}
   .empty p{margin:0 0 20px;font-size:14px}
 
   .search{border:1px solid var(--line-strong);background:var(--surface);border-radius:var(--r-sm);padding:9px 12px;font-size:14px;width:230px;font-family:inherit;transition:all .16s var(--ease)}
