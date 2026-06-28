@@ -850,6 +850,46 @@ const Style = () => (
     .art-row.iva{grid-template-columns:1fr 80px 68px 32px}
   }
 
+  /* ====== LANDING / PRESENTAZIONE ====== */
+  .lp{min-height:100dvh}
+  .lp-in{max-width:1000px;margin:0 auto;padding:0 24px}
+  .lp-nav{position:sticky;top:0;z-index:20;background:var(--topbar-bg);backdrop-filter:saturate(1.1) blur(12px);-webkit-backdrop-filter:saturate(1.1) blur(12px);border-bottom:1px solid var(--line)}
+  .lp-nav-in{max-width:1000px;margin:0 auto;padding:0 24px;height:66px;display:flex;align-items:center;justify-content:space-between}
+  .lp-hero{padding:84px 0 40px;max-width:760px}
+  .lp-hero h1{font-size:clamp(34px,6vw,58px);font-weight:700;letter-spacing:-.035em;line-height:1.02;margin:0 0 20px}
+  .lp-hero .sub{font-size:clamp(16px,2.2vw,20px);color:var(--muted);line-height:1.5;margin:0 0 30px;max-width:56ch}
+  .lp-cta{display:flex;gap:12px;flex-wrap:wrap}
+  .btn-lg{padding:13px 22px;font-size:15px;border-radius:10px}
+  .lp-collab{display:flex;align-items:center;gap:9px;color:var(--faint);font-size:12px;font-weight:500;margin-top:34px}
+  .lp-collab img{height:22px;object-fit:contain}
+  .lp-section{padding:52px 0;border-top:1px solid var(--line)}
+  .lp-section h2{font-size:clamp(24px,3.6vw,34px);font-weight:700;letter-spacing:-.025em;margin:0 0 10px}
+  .lp-section .lead{color:var(--muted);font-size:16px;margin:0 0 30px;max-width:60ch;line-height:1.55}
+  .lp-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+  .lp-feature{background:var(--surface);padding:26px 24px}
+  .lp-feature .fi{font-size:18px;margin-bottom:12px;color:var(--ink)}
+  .lp-feature h3{font-size:16px;font-weight:600;margin:0 0 6px;letter-spacing:-.01em}
+  .lp-feature p{color:var(--muted);font-size:14px;line-height:1.55;margin:0}
+  .lp-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+  .lp-step{padding:22px 0}
+  .lp-step .n{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--line-strong);border-radius:99px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;margin-bottom:14px}
+  .lp-step h3{font-size:17px;font-weight:600;margin:0 0 6px;letter-spacing:-.01em}
+  .lp-step p{color:var(--muted);font-size:14px;line-height:1.55;margin:0;max-width:34ch}
+  .lp-final{text-align:center;padding:64px 24px;border-top:1px solid var(--line)}
+  .lp-final h2{font-size:clamp(26px,4vw,38px);font-weight:700;letter-spacing:-.025em;margin:0 0 12px}
+  .lp-final p{color:var(--muted);font-size:16px;margin:0 0 26px;line-height:1.5}
+  .lp-final .lp-cta{justify-content:center}
+  .lp-foot{display:flex;flex-direction:column;align-items:center;gap:9px;padding:44px 24px 60px;color:var(--faint);font-size:12px;text-align:center;border-top:1px solid var(--line)}
+  .lp-foot img{height:34px;object-fit:contain}
+  .lp-note{max-width:64ch;margin:6px auto 0;line-height:1.55}
+  .demo-bar{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;background:var(--ink);color:var(--bg);padding:9px 16px;font-size:13px;text-align:center;line-height:1.4}
+  .demo-bar .btn{padding:5px 12px;font-size:13px}
+  @media(max-width:640px){
+    .lp-hero{padding:48px 0 28px}
+    .lp-section{padding:40px 0}
+    .lp-nav-in,.lp-in{padding:0 16px}
+  }
+
   /* ====== TEMA SCURO ======
      I valori sono identici per la scelta manuale (data-theme="dark")
      e per la modalita automatica (data-theme="auto" + sistema scuro). */
@@ -882,6 +922,11 @@ const Style = () => (
       --sh-md:0 1px 3px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.45);
       --sh-lg:0 24px 56px rgba(0,0,0,.66),0 6px 16px rgba(0,0,0,.46);
     }
+  }
+  /* loghi partner (immagini scure): chip chiara per renderli leggibili al buio */
+  :root[data-theme="dark"] .lp-collab img,:root[data-theme="dark"] .lp-foot img,:root[data-theme="dark"] .login-collab img,:root[data-theme="dark"] .login-foot img{background:#fff;border-radius:6px;padding:4px 7px}
+  @media (prefers-color-scheme: dark){
+    :root[data-theme="auto"] .lp-collab img,:root[data-theme="auto"] .lp-foot img,:root[data-theme="auto"] .login-collab img,:root[data-theme="auto"] .login-foot img{background:#fff;border-radius:6px;padding:4px 7px}
   }
   `}</style>
 );
@@ -1013,6 +1058,8 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [tema, setTema] = useState(() => { try { return localStorage.getItem("interventia_tema") || "auto"; } catch (e) { return "auto"; } });
   useEffect(() => { try { document.documentElement.setAttribute("data-theme", tema); localStorage.setItem("interventia_tema", tema); } catch (e) {} }, [tema]);
+  const [publicView, setPublicView] = useState("landing"); // landing | login (quando non autenticato)
+  const [demo, setDemo] = useState(false);
   const [clienti, setClienti] = useState([]);
   const [rapportini, setRapportini] = useState([]);
   const [richieste, setRichieste] = useState([]);
@@ -1201,6 +1248,26 @@ export default function App() {
     try { await fetch("/api/logout", { method: "POST", credentials: "include" }); } catch (e) {}
     setAuth(null); setGreet(null); setMenuOpen(false); setDetailCliId(null); setLicenzeOpen(false);
     setClienti([]); setRapportini([]); setRichieste([]); setFatture([]); setAzienda(null); setAppuntamenti([]); setOrdiniMateriale([]);
+    setDemo(false); setPublicView("landing");
+  };
+  const startDemo = () => {
+    setClienti(DEMO_CLIENTI.map(migrateCliente));
+    setRapportini(DEMO_RAPP);
+    setRichieste(DEMO_RICH);
+    setAzienda(DEMO_AZIENDA);
+    setFatture([]);
+    setAppuntamenti(DEMO_APP);
+    setOrdiniMateriale([]);
+    setTab("rapportini");
+    setDetailCliId(null);
+    setDemo(true);
+    setAuth({ role: "demo", label: "Demo", scadenza: null });
+  };
+  const exitDemo = () => {
+    setDemo(false);
+    setAuth(null);
+    setClienti([]); setRapportini([]); setRichieste([]); setFatture([]); setAzienda(null); setAppuntamenti([]);
+    setPublicView("login");
   };
   const createLicenza = (data) => {
     const mesi = Number(data.durataMesi) || 1;
@@ -1274,7 +1341,10 @@ export default function App() {
   }, [rapportini]);
 
   if (!loaded) return <div className="app"><Style /><div className="splash">Carico i dati…</div></div>;
-  if (!auth) return <LoginScreen onSubmit={tryLogin} onRegister={tryRegister} />;
+  if (!auth) {
+    if (publicView === "login") return <LoginScreen onSubmit={tryLogin} onRegister={tryRegister} onBack={() => setPublicView("landing")} />;
+    return <Landing onLogin={() => setPublicView("login")} onDemo={startDemo} />;
+  }
   if (auth.role === "reseller") return <ResellerScreen label={auth.label} onLogout={logout} />;
 
   /* ---- azioni rapportino ---- */
@@ -1436,6 +1506,13 @@ export default function App() {
           <button className="btn btn-primary" onClick={openNuovoRapp}>＋ Nuovo rapportino</button>
         </div>
       </header>
+
+      {demo && (
+        <div className="demo-bar">
+          <span>Stai guardando una <b>demo</b> con dati di esempio — le modifiche non vengono salvate.</span>
+          <button className="btn btn-sm" onClick={exitDemo}>Accedi</button>
+        </div>
+      )}
 
       {auth.scadenza && (() => {
         const fine = new Date(auth.scadenza + "T23:59:59").getTime();
@@ -2738,7 +2815,111 @@ function FatturaPreview({ fattura, logo, onClose, onDownload, onDelete }) {
    SCHERMATA DI LOGIN
    ============================================================ */
 
-function LoginScreen({ onSubmit, onRegister }) {
+/* ============================================================
+   DATI DEMO (anteprima senza login)
+   ============================================================ */
+const DEMO_AZIENDA = { denominazione: "Idraulica Bianchi snc", partitaIva: "03847192041", codiceFiscale: "", regimeFiscale: "RF01", aliquotaIva: 22, aliquoteIva: [22, 10, 4], aliquotaManodopera: 22, costoManodopera: 35, indirizzo: "Via dei Mestieri 12", cap: "24121", comune: "Bergamo", provincia: "BG", modalitaPagamento: "MP05", numeroProssimo: 129, sezionale: "", iban: "", mabaTelefono: "" };
+const DEMO_CLIENTI = [
+  { id: "d1", tipo: "azienda", denominazione: "Condominio Via Mazzini 14", indirizzo: "Via Mazzini 14", cap: "24121", comune: "Bergamo", provincia: "BG", piva: "03517420168", email: "amm@mazzini14.it", telefono: "035 421 778" },
+  { id: "d2", tipo: "persona", nome: "Giulia", cognome: "Ferrari", indirizzo: "Via Roma 8", cap: "24047", comune: "Treviglio", provincia: "BG", telefono: "347 118 2390", email: "giulia.ferrari@gmail.com" },
+  { id: "d3", tipo: "persona", nome: "Marco", cognome: "De Santis", indirizzo: "Via Verdi 3", comune: "Dalmine", provincia: "BG", telefono: "340 552 9981" },
+  { id: "d4", tipo: "azienda", denominazione: "Panificio Sole", indirizzo: "Via Battisti 22", comune: "Bergamo", provincia: "BG", piva: "02233110164", telefono: "035 240 119" },
+];
+const DEMO_RAPP = [
+  { id: "dr1", numero: 128, data: "2026-06-24", clienteId: "d1", ore: 3.5, tariffaOraria: 35, descrizione: "Sostituzione valvola di sicurezza e sfiato impianto di riscaldamento centralizzato", luogo: "Bergamo", articoli: [{ descrizione: "Valvola sicurezza 3 bar", prezzo: 42, iva: 22 }, { descrizione: "Sfiato automatico", prezzo: 18, iva: 22 }], note: "", fatturato: false, createdAt: 5 },
+  { id: "dr2", numero: 127, data: "2026-06-20", clienteId: "d2", ore: 2, tariffaOraria: 35, descrizione: "Riparazione perdita sottolavello cucina", luogo: "Treviglio", articoli: [{ descrizione: "Sifone a bottiglia", prezzo: 14, iva: 22 }], note: "", fatturato: false, createdAt: 4 },
+  { id: "dr3", numero: 126, data: "2026-06-17", clienteId: "d3", ore: 1.5, tariffaOraria: 0, descrizione: "Sopralluogo caldaia murale, preventivo manutenzione", luogo: "Dalmine", articoli: [], note: "", fatturato: true, createdAt: 3 },
+  { id: "dr4", numero: 125, data: "2026-06-12", clienteId: "d4", ore: 4, tariffaOraria: 38, descrizione: "Installazione boiler elettrico 80L e collegamento idraulico", luogo: "Bergamo", articoli: [{ descrizione: "Boiler 80L", prezzo: 230, iva: 22 }, { descrizione: "Gruppo di sicurezza", prezzo: 28, iva: 22 }], note: "", fatturato: false, createdAt: 2 },
+];
+const DEMO_RICH = [
+  { id: "dq1", clienteId: "d2", data: "2026-06-26", descrizione: "Rubinetto del bagno che gocciola, richiamare in mattinata", stato: "da_gestire", createdAt: 6 },
+  { id: "dq2", clienteId: "d4", data: "2026-06-25", descrizione: "Preventivo per addolcitore acqua", stato: "da_gestire", createdAt: 5 },
+];
+const DEMO_APP = [
+  { id: "da1", data: "2026-06-29", ora: "09:00", durata: 90, clienteId: "d1", clienteNome: "Condominio Via Mazzini 14", titolo: "Controllo pressione impianto", luogo: "Bergamo", note: "", stato: "da_fare", richiestaId: "" },
+  { id: "da2", data: "2026-06-29", ora: "14:30", durata: 60, clienteId: "d2", clienteNome: "Giulia Ferrari", titolo: "Riparazione rubinetto bagno", luogo: "Treviglio", note: "", stato: "da_fare", richiestaId: "" },
+];
+
+const LP_FEATURES = [
+  ["Rapportini", "Registra ogni intervento con ore, materiali e luogo. Resta pronto da fatturare quando vuoi."],
+  ["Clienti", "Anagrafica con dati di fatturazione, storico degli interventi e quanto c'è ancora da incassare."],
+  ["Fattura elettronica", "Genera il file XML per il Sistema di Interscambio e la copia di cortesia in PDF con il tuo logo."],
+  ["Agenda", "Pianifica gli appuntamenti della settimana e aprili al volo su Google Calendar."],
+  ["Assistenza", "Segna le chiamate e le richieste dei clienti, così non perdi nessun lavoro da evadere."],
+  ["Materiale MABA", "Prepari l'ordine del materiale e lo invii su WhatsApp a MABA store in un tocco."],
+];
+
+function Landing({ onLogin, onDemo }) {
+  return (
+    <div className="app lp">
+      <Style />
+      <nav className="lp-nav">
+        <div className="lp-nav-in">
+          <div className="brand">
+            <div className="brand-mark"><img src={ICON_INTERVENTIA} alt="interventia" /></div>
+            <div className="brand-name">interventia</div>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button className="btn" onClick={onDemo}>Guarda la demo</button>
+            <button className="btn btn-primary" onClick={onLogin}>Accedi</button>
+          </div>
+        </div>
+      </nav>
+
+      <div className="lp-in">
+        <header className="lp-hero">
+          <h1>Il gestionale per chi lavora sul campo.</h1>
+          <p className="sub">Rapportini, clienti, assistenza e fatturazione elettronica in un'unica app. Pensata per tecnici e artigiani: registri l'intervento e, quando vuoi, lo trasformi in fattura.</p>
+          <div className="lp-cta">
+            <button className="btn btn-primary btn-lg" onClick={onDemo}>Guarda la demo</button>
+            <button className="btn btn-lg" onClick={onLogin}>Inizia la prova gratuita</button>
+          </div>
+          <div className="lp-collab"><span>In collaborazione con</span><img src={LOGO_MABA} alt="MABA store" /></div>
+        </header>
+
+        <section className="lp-section">
+          <h2>Tutto il lavoro in un posto solo</h2>
+          <p className="lead">Niente fogli sparsi o promemoria sul telefono. interventia tiene insieme interventi, clienti e fatture: a fine mese sai esattamente cosa hai fatto e cosa devi incassare.</p>
+          <div className="lp-features">
+            {LP_FEATURES.map(([t, d]) => (
+              <div className="lp-feature" key={t}>
+                <h3>{t}</h3>
+                <p>{d}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="lp-section">
+          <h2>Come funziona</h2>
+          <p className="lead">Dal lavoro alla fattura in tre passaggi.</p>
+          <div className="lp-steps">
+            <div className="lp-step"><div className="n num">1</div><h3>Registri l'intervento</h3><p>Cliente, ore, materiali e luogo. Bastano pochi tocchi, anche dal cantiere.</p></div>
+            <div className="lp-step"><div className="n num">2</div><h3>Raggruppi per cliente</h3><p>Selezioni i rapportini ancora da fatturare e controlli gli importi.</p></div>
+            <div className="lp-step"><div className="n num">3</div><h3>Emetti la fattura</h3><p>Generi il file XML per lo SdI e la copia di cortesia in PDF per il cliente.</p></div>
+          </div>
+        </section>
+      </div>
+
+      <section className="lp-final">
+        <h2>Provala adesso, senza registrarti</h2>
+        <p>Apri la demo con clienti e rapportini di esempio e guarda com'è fatta.</p>
+        <div className="lp-cta">
+          <button className="btn btn-primary btn-lg" onClick={onDemo}>Guarda la demo</button>
+          <button className="btn btn-lg" onClick={onLogin}>Accedi / Prova gratis</button>
+        </div>
+      </section>
+
+      <footer className="lp-foot">
+        <img src={LOGO_REALIZZATORE} alt="Office Solution" />
+        <div>Realizzato da Office Solution · in collaborazione con MABA store</div>
+        <p className="lp-note">La demo mostra dati di esempio: puoi muoverti liberamente tra le sezioni, ma non viene salvato nulla.</p>
+      </footer>
+    </div>
+  );
+}
+
+function LoginScreen({ onSubmit, onRegister, onBack }) {
   const [mode, setMode] = useState("login"); // "login" | "register"
   const [denom, setDenom] = useState("");
   const [email, setEmail] = useState("");
@@ -2757,6 +2938,9 @@ function LoginScreen({ onSubmit, onRegister }) {
     <div className="app">
       <Style />
       <div className="login">
+        {onBack && (
+          <button className="back" style={{ position: "absolute", top: 18, left: 18, marginBottom: 0 }} onClick={onBack}>‹ Indietro</button>
+        )}
         <div className="login-collab">
           <span>In collaborazione con</span>
           <img src={LOGO_MABA} alt="MABA store" />
