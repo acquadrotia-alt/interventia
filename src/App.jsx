@@ -644,6 +644,7 @@ const Style = () => (
     --amber:#57575F; --amber-soft:#EFEFF1;
     --danger:#B42318; --danger-soft:#FBECEA;
     --topbar-bg:rgba(255,255,255,.85); --on-primary:#fff; --primary-hover:#000;
+    --glow:rgba(24,24,27,.05);
     /* whisper-soft neutral elevation */
     --sh-sm:0 1px 2px rgba(24,24,27,.04);
     --sh-md:0 1px 3px rgba(24,24,27,.05),0 6px 16px rgba(24,24,27,.05);
@@ -851,43 +852,86 @@ const Style = () => (
   }
 
   /* ====== LANDING / PRESENTAZIONE ====== */
-  .lp{min-height:100dvh}
-  .lp-in{max-width:1000px;margin:0 auto;padding:0 24px}
+  .lp{min-height:100dvh;overflow-x:hidden}
+  .lp-in{max-width:1040px;margin:0 auto;padding:0 24px}
   .lp-nav{position:sticky;top:0;z-index:20;background:var(--topbar-bg);backdrop-filter:saturate(1.1) blur(12px);-webkit-backdrop-filter:saturate(1.1) blur(12px);border-bottom:1px solid var(--line)}
-  .lp-nav-in{max-width:1000px;margin:0 auto;padding:0 24px;height:66px;display:flex;align-items:center;justify-content:space-between}
-  .lp-hero{padding:84px 0 40px;max-width:760px}
-  .lp-hero h1{font-size:clamp(34px,6vw,58px);font-weight:700;letter-spacing:-.035em;line-height:1.02;margin:0 0 20px}
-  .lp-hero .sub{font-size:clamp(16px,2.2vw,20px);color:var(--muted);line-height:1.5;margin:0 0 30px;max-width:56ch}
+  .lp-nav-in{max-width:1040px;margin:0 auto;padding:0 24px;height:66px;display:flex;align-items:center;justify-content:space-between}
+
+  .lp-hero{position:relative;display:grid;grid-template-columns:1.05fr .95fr;gap:52px;align-items:center;padding:74px 0 64px}
+  .lp-hero-txt{position:relative;z-index:1;max-width:580px}
+  .lp-tag{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--line-strong);border-radius:99px;padding:5px 13px;margin-bottom:22px}
+  .lp-tag .d{width:7px;height:7px;border-radius:99px;background:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+  .lp-hero h1{font-size:clamp(34px,5.2vw,55px);font-weight:700;letter-spacing:-.035em;line-height:1.03;margin:0 0 20px}
+  .lp-hero .sub{font-size:clamp(16px,2.1vw,19px);color:var(--muted);line-height:1.55;margin:0 0 30px;max-width:48ch}
   .lp-cta{display:flex;gap:12px;flex-wrap:wrap}
-  .btn-lg{padding:13px 22px;font-size:15px;border-radius:10px}
-  .lp-collab{display:flex;align-items:center;gap:9px;color:var(--faint);font-size:12px;font-weight:500;margin-top:34px}
+  .btn-lg{padding:13px 22px;font-size:15px;border-radius:11px}
+  .lp-collab{display:flex;align-items:center;gap:9px;color:var(--faint);font-size:12px;font-weight:500;margin-top:32px}
   .lp-collab img{height:22px;object-fit:contain}
-  .lp-section{padding:52px 0;border-top:1px solid var(--line)}
-  .lp-section h2{font-size:clamp(24px,3.6vw,34px);font-weight:700;letter-spacing:-.025em;margin:0 0 10px}
-  .lp-section .lead{color:var(--muted);font-size:16px;margin:0 0 30px;max-width:60ch;line-height:1.55}
-  .lp-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
-  .lp-feature{background:var(--surface);padding:26px 24px}
-  .lp-feature .fi{font-size:18px;margin-bottom:12px;color:var(--ink)}
-  .lp-feature h3{font-size:16px;font-weight:600;margin:0 0 6px;letter-spacing:-.01em}
+
+  .lp-deco{position:absolute;inset:-1px 0 auto 0;height:700px;pointer-events:none;z-index:0;overflow:hidden}
+  .lp-deco .grid{position:absolute;inset:0;background-image:radial-gradient(var(--line-strong) 1.1px,transparent 1.4px);background-size:26px 26px;-webkit-mask:radial-gradient(135% 90% at 78% 6%,#000,transparent 60%);mask:radial-gradient(135% 90% at 78% 6%,#000,transparent 60%);opacity:.6}
+  .lp-deco .glow{position:absolute;top:-160px;right:-130px;width:540px;height:540px;border-radius:50%;background:radial-gradient(circle,var(--glow),transparent 70%)}
+
+  .lp-mock{position:relative;z-index:1;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh-lg);overflow:hidden;transform:rotate(.5deg)}
+  .lp-mock-top{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--line)}
+  .lp-mock-brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13.5px}
+  .lp-mock-brand .m{width:22px;height:22px;border-radius:6px;overflow:hidden;flex-shrink:0}
+  .lp-mock-brand .m img{width:100%;height:100%;object-fit:contain}
+  .lp-mock-cta{font-size:11.5px;font-weight:600;background:var(--ink);color:var(--on-primary);padding:6px 11px;border-radius:8px}
+  .lp-mock-body{padding:13px 15px;display:flex;flex-direction:column;gap:9px}
+  .lp-mock-row{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+  .lp-mock-row .dt{width:52px;flex-shrink:0}
+  .lp-mock-row .dt b{font-size:13px}
+  .lp-mock-row .dt span{display:block;font-size:10.5px;color:var(--faint)}
+  .lp-mock-row .nm{flex:1;min-width:0;font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lp-mock-row .nm span{display:block;font-weight:400;font-size:11px;color:var(--muted);margin-top:1px}
+  .lp-mock-row .am{font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+  .lp-mb{display:inline-block;margin-top:4px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;white-space:nowrap}
+  .lp-mb.w{border:1px solid var(--line-strong);color:var(--muted)}
+  .lp-mb.k{background:var(--green-soft);color:var(--green)}
+
+  .lp-section{padding:62px 0;border-top:1px solid var(--line)}
+  .lp-section h2{font-size:clamp(24px,3.4vw,34px);font-weight:700;letter-spacing:-.025em;margin:0 0 10px}
+  .lp-section .lead{color:var(--muted);font-size:16px;margin:0 0 34px;max-width:60ch;line-height:1.55}
+  .lp-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:14px}
+  .lp-feature{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:24px 22px;transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s var(--ease)}
+  .lp-feature:hover{transform:translateY(-3px);box-shadow:var(--sh-md);border-color:var(--line-strong)}
+  .lp-ficon{width:42px;height:42px;border-radius:12px;border:1px solid var(--line-strong);background:var(--bg-tint);display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:var(--ink)}
+  .lp-feature h3{font-size:16.5px;font-weight:600;margin:0 0 6px;letter-spacing:-.01em}
   .lp-feature p{color:var(--muted);font-size:14px;line-height:1.55;margin:0}
-  .lp-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
-  .lp-step{padding:22px 0}
-  .lp-step .n{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--line-strong);border-radius:99px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;margin-bottom:14px}
+
+  .lp-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px}
+  .lp-step .n{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:var(--ink);color:var(--on-primary);border-radius:99px;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;margin-bottom:16px}
   .lp-step h3{font-size:17px;font-weight:600;margin:0 0 6px;letter-spacing:-.01em}
   .lp-step p{color:var(--muted);font-size:14px;line-height:1.55;margin:0;max-width:34ch}
-  .lp-final{text-align:center;padding:64px 24px;border-top:1px solid var(--line)}
-  .lp-final h2{font-size:clamp(26px,4vw,38px);font-weight:700;letter-spacing:-.025em;margin:0 0 12px}
-  .lp-final p{color:var(--muted);font-size:16px;margin:0 0 26px;line-height:1.5}
-  .lp-final .lp-cta{justify-content:center}
-  .lp-foot{display:flex;flex-direction:column;align-items:center;gap:9px;padding:44px 24px 60px;color:var(--faint);font-size:12px;text-align:center;border-top:1px solid var(--line)}
+
+  .lp-final{position:relative;text-align:center;padding:74px 24px;border-top:1px solid var(--line);overflow:hidden}
+  .lp-final::before{content:"";position:absolute;inset:0;background-image:radial-gradient(var(--line-strong) 1.1px,transparent 1.4px);background-size:26px 26px;-webkit-mask:radial-gradient(80% 120% at 50% 50%,#000,transparent 70%);mask:radial-gradient(80% 120% at 50% 50%,#000,transparent 70%);opacity:.45;pointer-events:none}
+  .lp-final h2{font-size:clamp(26px,4vw,40px);font-weight:700;letter-spacing:-.03em;margin:0 0 12px;position:relative;z-index:1}
+  .lp-final p{color:var(--muted);font-size:16px;margin:0 0 26px;line-height:1.5;position:relative;z-index:1}
+  .lp-final .lp-cta{justify-content:center;position:relative;z-index:1}
+  .lp-foot{display:flex;flex-direction:column;align-items:center;gap:9px;padding:44px 24px 64px;color:var(--faint);font-size:12px;text-align:center;border-top:1px solid var(--line)}
   .lp-foot img{height:34px;object-fit:contain}
   .lp-note{max-width:64ch;margin:6px auto 0;line-height:1.55}
   .demo-bar{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;background:var(--ink);color:var(--bg);padding:9px 16px;font-size:13px;text-align:center;line-height:1.4}
   .demo-bar .btn{padding:5px 12px;font-size:13px}
+
+  [data-reveal]{opacity:0;transform:translateY(20px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+  [data-reveal].is-visible{opacity:1;transform:none}
+  .lp-mock[data-reveal]{transform:translateY(20px) rotate(.5deg)}
+  .lp-mock[data-reveal].is-visible{transform:rotate(.5deg)}
+
+  @media(max-width:860px){
+    .lp-hero{grid-template-columns:1fr;gap:36px;padding:48px 0 28px}
+    .lp-deco{height:540px}
+    .lp-mock,.lp-mock[data-reveal].is-visible{transform:none}
+  }
   @media(max-width:640px){
-    .lp-hero{padding:48px 0 28px}
-    .lp-section{padding:40px 0}
+    .lp-section{padding:46px 0}
     .lp-nav-in,.lp-in{padding:0 16px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    [data-reveal],.lp-mock[data-reveal],.lp-mock[data-reveal].is-visible{opacity:1;transform:none;transition:none}
   }
 
   /* ====== TEMA SCURO ======
@@ -902,7 +946,7 @@ const Style = () => (
     --green:#4ECB92; --green-soft:#16271F;
     --amber:#A1A1AA; --amber-soft:#26262B;
     --danger:#F2716B; --danger-soft:#2A1717;
-    --topbar-bg:rgba(12,12,14,.8); --on-primary:var(--bg); --primary-hover:#FFFFFF;
+    --topbar-bg:rgba(12,12,14,.8); --on-primary:var(--bg); --primary-hover:#FFFFFF; --glow:rgba(255,255,255,.06);
     --sh-sm:0 1px 2px rgba(0,0,0,.45);
     --sh-md:0 1px 3px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.45);
     --sh-lg:0 24px 56px rgba(0,0,0,.66),0 6px 16px rgba(0,0,0,.46);
@@ -917,7 +961,7 @@ const Style = () => (
       --green:#4ECB92; --green-soft:#16271F;
       --amber:#A1A1AA; --amber-soft:#26262B;
       --danger:#F2716B; --danger-soft:#2A1717;
-      --topbar-bg:rgba(12,12,14,.8); --on-primary:var(--bg); --primary-hover:#FFFFFF;
+      --topbar-bg:rgba(12,12,14,.8); --on-primary:var(--bg); --primary-hover:#FFFFFF; --glow:rgba(255,255,255,.06);
       --sh-sm:0 1px 2px rgba(0,0,0,.45);
       --sh-md:0 1px 3px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.45);
       --sh-lg:0 24px 56px rgba(0,0,0,.66),0 6px 16px rgba(0,0,0,.46);
@@ -975,6 +1019,16 @@ const IcoLogout = ({ s = 20 }) => (
 const IcoGear = ({ s = 20 }) => (
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+);
+const IcoCal = ({ s = 20 }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 3v3M16 3v3" />
+  </svg>
+);
+const IcoBox = ({ s = 20 }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 16V8l-9-5-9 5v8l9 5 9-5z" /><path d="M3.3 7 12 12l8.7-5M12 12v9" />
   </svg>
 );
 
@@ -2841,15 +2895,31 @@ const DEMO_APP = [
 ];
 
 const LP_FEATURES = [
-  ["Rapportini", "Registra ogni intervento con ore, materiali e luogo. Resta pronto da fatturare quando vuoi."],
-  ["Clienti", "Anagrafica con dati di fatturazione, storico degli interventi e quanto c'è ancora da incassare."],
-  ["Fattura elettronica", "Genera il file XML per il Sistema di Interscambio e la copia di cortesia in PDF con il tuo logo."],
-  ["Agenda", "Pianifica gli appuntamenti della settimana e aprili al volo su Google Calendar."],
-  ["Assistenza", "Segna le chiamate e le richieste dei clienti, così non perdi nessun lavoro da evadere."],
-  ["Materiale MABA", "Prepari l'ordine del materiale e lo invii su WhatsApp a MABA store in un tocco."],
+  [<IcoDoc s={22} />, "Rapportini", "Registra ogni intervento con ore, materiali e luogo. Resta pronto da fatturare quando vuoi."],
+  [<IcoUser s={22} />, "Clienti", "Anagrafica con dati di fatturazione, storico degli interventi e quanto c'è ancora da incassare."],
+  [<IcoReceipt s={22} />, "Fattura elettronica", "Genera il file XML per il Sistema di Interscambio e la copia di cortesia in PDF con il tuo logo."],
+  [<IcoCal s={22} />, "Agenda", "Pianifica gli appuntamenti della settimana e aprili al volo su Google Calendar."],
+  [<IcoBell s={22} />, "Assistenza", "Segna le chiamate e le richieste dei clienti, così non perdi nessun lavoro da evadere."],
+  [<IcoBox s={22} />, "Materiale MABA", "Prepari l'ordine del materiale e lo invii su WhatsApp a MABA store in un tocco."],
 ];
 
+function useReveal() {
+  useEffect(() => {
+    const els = Array.from(document.querySelectorAll("[data-reveal]"));
+    const revealAll = () => els.forEach((e) => e.classList.add("is-visible"));
+    if (!("IntersectionObserver" in window)) { revealAll(); return; }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("is-visible"); io.unobserve(en.target); } });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.12 });
+    els.forEach((e) => io.observe(e));
+    // rete di sicurezza: nessun contenuto resta nascosto se l'observer non scatta
+    const t = setTimeout(revealAll, 900);
+    return () => { io.disconnect(); clearTimeout(t); };
+  }, []);
+}
+
 function Landing({ onLogin, onDemo }) {
+  useReveal();
   return (
     <div className="app lp">
       <Style />
@@ -2868,21 +2938,50 @@ function Landing({ onLogin, onDemo }) {
 
       <div className="lp-in">
         <header className="lp-hero">
-          <h1>Il gestionale per chi lavora sul campo.</h1>
-          <p className="sub">Rapportini, clienti, assistenza e fatturazione elettronica in un'unica app. Pensata per tecnici e artigiani: registri l'intervento e, quando vuoi, lo trasformi in fattura.</p>
-          <div className="lp-cta">
-            <button className="btn btn-primary btn-lg" onClick={onDemo}>Guarda la demo</button>
-            <button className="btn btn-lg" onClick={onLogin}>Inizia la prova gratuita</button>
+          <div className="lp-deco"><div className="grid" /><div className="glow" /></div>
+          <div className="lp-hero-txt" data-reveal>
+            <div className="lp-tag"><span className="d" /> Per tecnici e artigiani</div>
+            <h1>Il gestionale per chi lavora sul campo.</h1>
+            <p className="sub">Rapportini, clienti, assistenza e fatturazione elettronica in un'unica app. Registri l'intervento e, quando vuoi, lo trasformi in fattura.</p>
+            <div className="lp-cta">
+              <button className="btn btn-primary btn-lg" onClick={onDemo}>Guarda la demo</button>
+              <button className="btn btn-lg" onClick={onLogin}>Inizia la prova gratuita</button>
+            </div>
+            <div className="lp-collab"><span>In collaborazione con</span><img src={LOGO_MABA} alt="MABA store" /></div>
           </div>
-          <div className="lp-collab"><span>In collaborazione con</span><img src={LOGO_MABA} alt="MABA store" /></div>
+
+          <div className="lp-mock" data-reveal aria-hidden="true">
+            <div className="lp-mock-top">
+              <div className="lp-mock-brand"><span className="m"><img src={ICON_INTERVENTIA} alt="" /></span> Rapportini</div>
+              <span className="lp-mock-cta">＋ Nuovo</span>
+            </div>
+            <div className="lp-mock-body">
+              <div className="lp-mock-row">
+                <div className="dt"><b>24 giu</b><span>N. 128</span></div>
+                <div className="nm">Condominio Via Mazzini 14<span>3,5 h · 2 articoli · Bergamo</span></div>
+                <div className="am">182,50 €<br /><span className="lp-mb w">Da fatturare</span></div>
+              </div>
+              <div className="lp-mock-row">
+                <div className="dt"><b>20 giu</b><span>N. 127</span></div>
+                <div className="nm">Giulia Ferrari<span>2 h · 1 articolo · Treviglio</span></div>
+                <div className="am">84,00 €<br /><span className="lp-mb w">Da fatturare</span></div>
+              </div>
+              <div className="lp-mock-row">
+                <div className="dt"><b>17 giu</b><span>N. 126</span></div>
+                <div className="nm">Marco De Santis<span>1,5 h · Dalmine</span></div>
+                <div className="am">—<br /><span className="lp-mb k">Fatturato</span></div>
+              </div>
+            </div>
+          </div>
         </header>
 
-        <section className="lp-section">
+        <section className="lp-section" data-reveal>
           <h2>Tutto il lavoro in un posto solo</h2>
           <p className="lead">Niente fogli sparsi o promemoria sul telefono. interventia tiene insieme interventi, clienti e fatture: a fine mese sai esattamente cosa hai fatto e cosa devi incassare.</p>
           <div className="lp-features">
-            {LP_FEATURES.map(([t, d]) => (
+            {LP_FEATURES.map(([ico, t, d]) => (
               <div className="lp-feature" key={t}>
+                <div className="lp-ficon">{ico}</div>
                 <h3>{t}</h3>
                 <p>{d}</p>
               </div>
@@ -2890,7 +2989,7 @@ function Landing({ onLogin, onDemo }) {
           </div>
         </section>
 
-        <section className="lp-section">
+        <section className="lp-section" data-reveal>
           <h2>Come funziona</h2>
           <p className="lead">Dal lavoro alla fattura in tre passaggi.</p>
           <div className="lp-steps">
