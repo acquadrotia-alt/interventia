@@ -3,8 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFFFF" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0C0C0E" />
+    <meta name="theme-color" content="#FFFFFF" />
     <meta name="description" content="interventia — gestionale per rapportini di intervento, clienti, assistenza e fatturazione. Pensato per artigiani e tecnici sul campo." />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./favicon.svg" />
@@ -16,9 +15,8 @@
     <meta property="og:image" content="./favicon.svg" />
     <title>interventia — Gestionale interventi</title>
     <script>
-      // Applica il tema scelto prima del primo paint (evita il flash)
-      try { document.documentElement.setAttribute("data-theme", localStorage.getItem("interventia_tema") || "auto"); }
-      catch (e) { document.documentElement.setAttribute("data-theme", "auto"); }
+      // Tema chiaro fisso (nessuna modalita scura)
+      document.documentElement.setAttribute("data-theme", "light");
     </script>
   </head>
   <body>
