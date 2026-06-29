@@ -933,45 +933,6 @@ const Style = () => (
   @media(prefers-reduced-motion:reduce){
     [data-reveal],.lp-mock[data-reveal],.lp-mock[data-reveal].is-visible{opacity:1;transform:none;transition:none}
   }
-
-  /* ====== TEMA SCURO ======
-     I valori sono identici per la scelta manuale (data-theme="dark")
-     e per la modalita automatica (data-theme="auto" + sistema scuro). */
-  :root[data-theme="dark"]{
-    --bg:#0C0C0E; --bg-tint:#19191D; --surface:#151517; --surface-2:#1B1B1F;
-    --ink:#F7F7F8; --ink-2:#C2C2CA; --muted:#9D9DA7; --faint:#74747C;
-    --line:#272729; --line-soft:#1D1D20; --line-strong:#37373D;
-    --petrol:#F7F7F8; --petrol-dark:#FFFFFF; --petrol-soft:#26262B; --petrol-tint:#202026;
-    --copper:#F7F7F8; --copper-soft:#26262B;
-    --green:#4ECB92; --green-soft:#16271F;
-    --amber:#A1A1AA; --amber-soft:#26262B;
-    --danger:#F2716B; --danger-soft:#2A1717;
-    --topbar-bg:rgba(12,12,14,.8); --on-primary:var(--bg); --primary-hover:#FFFFFF; --glow:rgba(255,255,255,.06);
-    --sh-sm:0 1px 2px rgba(0,0,0,.45);
-    --sh-md:0 1px 3px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.45);
-    --sh-lg:0 24px 56px rgba(0,0,0,.66),0 6px 16px rgba(0,0,0,.46);
-  }
-  @media (prefers-color-scheme: dark){
-    :root[data-theme="auto"]{
-      --bg:#0C0C0E; --bg-tint:#19191D; --surface:#151517; --surface-2:#1B1B1F;
-      --ink:#F7F7F8; --ink-2:#C2C2CA; --muted:#9D9DA7; --faint:#74747C;
-      --line:#272729; --line-soft:#1D1D20; --line-strong:#37373D;
-      --petrol:#F7F7F8; --petrol-dark:#FFFFFF; --petrol-soft:#26262B; --petrol-tint:#202026;
-      --copper:#F7F7F8; --copper-soft:#26262B;
-      --green:#4ECB92; --green-soft:#16271F;
-      --amber:#A1A1AA; --amber-soft:#26262B;
-      --danger:#F2716B; --danger-soft:#2A1717;
-      --topbar-bg:rgba(12,12,14,.8); --on-primary:var(--bg); --primary-hover:#FFFFFF; --glow:rgba(255,255,255,.06);
-      --sh-sm:0 1px 2px rgba(0,0,0,.45);
-      --sh-md:0 1px 3px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.45);
-      --sh-lg:0 24px 56px rgba(0,0,0,.66),0 6px 16px rgba(0,0,0,.46);
-    }
-  }
-  /* loghi partner (immagini scure): chip chiara per renderli leggibili al buio */
-  :root[data-theme="dark"] .lp-collab img,:root[data-theme="dark"] .lp-foot img,:root[data-theme="dark"] .login-collab img,:root[data-theme="dark"] .login-foot img{background:#fff;border-radius:6px;padding:4px 7px}
-  @media (prefers-color-scheme: dark){
-    :root[data-theme="auto"] .lp-collab img,:root[data-theme="auto"] .lp-foot img,:root[data-theme="auto"] .login-collab img,:root[data-theme="auto"] .login-foot img{background:#fff;border-radius:6px;padding:4px 7px}
-  }
   `}</style>
 );
 
@@ -1110,8 +1071,7 @@ function seedData() {
 
 export default function App() {
   const [loaded, setLoaded] = useState(false);
-  const [tema, setTema] = useState(() => { try { return localStorage.getItem("interventia_tema") || "auto"; } catch (e) { return "auto"; } });
-  useEffect(() => { try { document.documentElement.setAttribute("data-theme", tema); localStorage.setItem("interventia_tema", tema); } catch (e) {} }, [tema]);
+  useEffect(() => { try { document.documentElement.setAttribute("data-theme", "light"); } catch (e) {} }, []);
   const [publicView, setPublicView] = useState("landing"); // landing | login (quando non autenticato)
   const [demo, setDemo] = useState(false);
   const [clienti, setClienti] = useState([]);
@@ -1781,8 +1741,6 @@ export default function App() {
           setForm={setAziendaForm}
           onSave={saveAzienda}
           onClose={() => setAziendaForm(null)}
-          tema={tema}
-          setTema={setTema}
         />
       )}
 
@@ -2572,7 +2530,7 @@ function RichiestaForm({ form, setForm, clienti, onSave, onClose, onDelete }) {
    FORM DATI AZIENDA (cedente/prestatore per la fattura)
    ============================================================ */
 
-function AziendaForm({ form, setForm, onSave, onClose, tema, setTema }) {
+function AziendaForm({ form, setForm, onSave, onClose }) {
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const forfettario = form.regimeFiscale === "RF19";
   const [aliqText, setAliqText] = useState((form.aliquoteIva || [22]).join(", "));
@@ -2606,18 +2564,6 @@ function AziendaForm({ form, setForm, onSave, onClose, tema, setTema }) {
           <button className="icon-x" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
-          {setTema && (
-            <div className="field">
-              <span className="label">Aspetto dell'app</span>
-              <div style={{ display: "flex", gap: 6 }}>
-                {[["auto", "Automatico"], ["light", "Chiaro"], ["dark", "Scuro"]].map(([k, lab]) => (
-                  <button key={k} type="button" className={"btn" + (tema === k ? " btn-primary" : "")} style={{ flex: 1, justifyContent: "center" }} onClick={() => setTema(k)}>{lab}</button>
-                ))}
-              </div>
-              <div className="help">“Automatico” segue il tema chiaro o scuro impostato sul telefono o sul computer.</div>
-            </div>
-          )}
-
           <div className="help" style={{ marginBottom: 14 }}>Sono i tuoi dati di cedente/prestatore: vengono inseriti nella fattura elettronica XML.</div>
 
           <div className="field">
