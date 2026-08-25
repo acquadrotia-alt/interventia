@@ -7,3 +7,9 @@ dist/
 # Log e file di sistema
 *.log
 .DS_Store
+
+# Bytecode generato dagli script delle skill: si rigenera da solo a
+# ogni esecuzione, quindi in archivio sarebbe solo rumore che cambia
+# a ogni commit senza voler dire niente.
+__pycache__/
+*.pyc
